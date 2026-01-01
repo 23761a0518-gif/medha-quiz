@@ -13,8 +13,8 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-let teams = {}; // token -> team
-let socketMap = {}; // socket.id -> token
+let teams = {};        // token -> team
+let socketToToken = {}; // socket.id -> token
 let questions = [];
 
 const POINTS = 10;
@@ -24,7 +24,7 @@ io.on("connection", socket => {
   socket.on("join", ({ name, token }) => {
     if (!name || !token) return;
 
-    // block reattempt from same device
+    // prevent reattempt from same device
     if (teams[token]) {
       socket.emit("blocked", "Reattempt not allowed");
       return;
@@ -36,38 +36,36 @@ io.on("connection", socket => {
       dq: false
     };
 
-    socketMap[socket.id] = token;
+    socketToToken[socket.id] = token;
+
     io.emit("leaderboard", teams);
   });
 
-  socket.on("answer", data => {
-  const t = teams[socket.id];
-  if (!t || t.dq) return;
+  socket.on("answer", ({ correct }) => {
+    const token = socketToToken[socket.id];
+    if (!token) return;
 
-  // SUPPORT BOTH formats (safety)
-  const correct =
-    typeof data === "boolean"
-      ? data
-      : data && data.correct === true;
+    const team = teams[token];
+    if (!team || team.dq) return;
 
-  if (correct) {
-    t.score += 10;
-    console.log("Score added to", t.name, "=", t.score);
-  }
+    if (correct === true) {
+      team.score += POINTS;
+      console.log("Score updated:", team.name, team.score);
+    }
 
-  io.emit("leaderboard", teams);
-});
-
+    io.emit("leaderboard", teams);
+  });
 
   socket.on("dq", () => {
-    const token = socketMap[socket.id];
+    const token = socketToToken[socket.id];
     if (!token) return;
+
     teams[token].dq = true;
     io.emit("leaderboard", teams);
   });
 
   socket.on("disconnect", () => {
-    delete socketMap[socket.id];
+    delete socketToToken[socket.id];
   });
 });
 
@@ -83,4 +81,4 @@ app.get("/questions", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("MEDHA Quiz Running"));
+server.listen(PORT, () => console.log("MEDHA Quiz Running on", PORT));

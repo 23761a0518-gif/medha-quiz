@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,6 +5,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <h2>Live Leaderboard</h2>
 <ul id="l"></ul>
 
@@ -18,9 +18,10 @@ socket.on("leaderboard", data => {
   Object.values(data)
     .sort((a,b)=>b.score-a.score)
     .forEach(t => {
-      l.innerHTML += `<li>${t.name} - ${t.score} ${t.dq?"❌":""}</li>`;
+      l.innerHTML += `<li>${t.name} - ${t.score} ${t.dq ? "❌" : ""}</li>`;
     });
 });
 </script>
+
 </body>
 </html>
