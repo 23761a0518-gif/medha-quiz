@@ -1,20 +1,96 @@
+:root {
+    --primary: #00d2ff;
+    --secondary: #3a7bd5;
+    --dark: #0f172a;
+    --glass: rgba(255, 255, 255, 0.1);
+}
+
 body {
-  background:#0f172a;
-  color:#e5e7eb;
-  font-family:Arial;
-  text-align:center;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at top, #1e293b, #0f172a);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+
+/* Header Section */
+.college-header {
+    width: 100%;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--glass);
+    margin-bottom: 30px;
+}
+
+.logo-img { height: 60px; margin: 0 20px; }
+
+.header-text h1 { font-size: 1.2rem; margin: 0; color: var(--primary); }
+.header-text p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
+
+/* Container Boxes */
+.card {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+/* Buttons */
 button {
-  padding:12px 18px;
-  margin:8px;
-  background:#22c55e;
-  border:none;
-  font-size:16px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin: 10px;
+    width: 100%;
 }
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
+}
+
+button:disabled { background: #475569; cursor: not-allowed; }
+
+/* Inputs */
 input {
-  padding:10px;
-  font-size:16px;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--glass);
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    box-sizing: border-box;
 }
-h1 {
-  color:#3b82f6;
+
+/* Quiz Options */
+#ops { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+
+/* Leaderboard List */
+ul { list-style: none; padding: 0; width: 100%; }
+li {
+    background: rgba(255, 255, 255, 0.05);
+    margin: 8px 0;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
+.dq-label { color: #ff4b2b; font-weight: bold; }

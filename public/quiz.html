@@ -1,79 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MEDHA Quiz - Live</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Quiz | MEDHA 2K26</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2 id="q">Waiting for questions...</h2>
-  <div id="ops"></div>
-  <p id="timer"></p>
+    <div class="college-header">
+        <img src="college_logo.png" class="logo-img">
+        <div class="header-text">
+            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
+            <p>CSE BRANCH | LAKSHYA 2K26</p>
+        </div>
+        <img src="lakshya_logo.png" class="logo-img">
+    </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const token = localStorage.getItem("token");
-    let questions = [], i = 0, time = 15, timerId, completed = false;
+    <div class="card">
+        <div id="timer" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">Time: 15</div>
+        <h3 id="q">Loading Questions...</h3>
+        <div id="ops"></div>
+    </div>
 
-    if (token) socket.emit("rejoin", token);
-    else window.location.href = "/";
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const token = localStorage.getItem("token");
+        let questions = [], i = 0, time = 15, timerId, completed = false;
 
-    fetch("/questions")
-      .then(r => r.json())
-      .then(d => { 
-        questions = d; 
-        if(questions.length > 0) load(); 
-        else document.getElementById("q").innerText = "No questions uploaded yet.";
-      });
+        if (token) socket.emit("rejoin", token);
+        else window.location.href = "index.html";
 
-    function load() {
-      if (i >= questions.length) {
-        completed = true;
-        document.body.innerHTML = "<h1>Quiz Completed! Check Leaderboard.</h1>";
-        return;
-      }
-      const q = questions[i];
-      document.getElementById("q").innerText = q.Question;
-      const ops = document.getElementById("ops");
-      ops.innerHTML = "";
+        fetch("/questions").then(r => r.json()).then(d => { 
+            questions = d; 
+            if(questions.length > 0) load();
+        });
 
-      ["A","B","C","D"].forEach(k => {
-        const btn = document.createElement("button");
-        btn.innerText = q[k];
-        btn.onclick = () => {
-          // Disable buttons to prevent double clicking
-          Array.from(ops.getElementsByTagName('button')).forEach(b => b.disabled = true);
-          submit(k === q.Answer.trim());
-        };
-        ops.appendChild(btn);
-      });
+        function load() {
+            if (i >= questions.length) {
+                completed = true;
+                document.querySelector(".card").innerHTML = "<h2>Quiz Completed!</h2><p>Check the main screen for results.</p>";
+                return;
+            }
+            const q = questions[i];
+            document.getElementById("q").innerText = q.Question;
+            const ops = document.getElementById("ops");
+            ops.innerHTML = "";
 
-      time = 15;
-      clearInterval(timerId);
-      timerId = setInterval(() => {
-        document.getElementById("timer").innerText = "Time: " + time--;
-        if (time < 0) next();
-      }, 1000);
-    }
+            ["A","B","C","D"].forEach(k => {
+                const btn = document.createElement("button");
+                btn.innerText = q[k];
+                btn.onclick = () => {
+                    Array.from(ops.getElementsByTagName('button')).forEach(b => b.disabled = true);
+                    submit(k === q.Answer.trim());
+                };
+                ops.appendChild(btn);
+            });
 
-    function submit(correct) {
-      clearInterval(timerId);
-      socket.emit("answer", { correct });
-      next();
-    }
+            time = 15;
+            clearInterval(timerId);
+            timerId = setInterval(() => {
+                document.getElementById("timer").innerText = "Time: " + time--;
+                if (time < 0) next();
+            }, 1000);
+        }
 
-    function next() {
-      i++;
-      load();
-    }
+        function submit(correct) {
+            clearInterval(timerId);
+            socket.emit("answer", { correct });
+            next();
+        }
 
-    document.addEventListener("visibilitychange", () => { if (!completed && document.hidden) dq(); });
-    window.addEventListener("blur", () => { if (!completed) dq(); });
+        function next() { i++; load(); }
 
-    function dq() {
-      socket.emit("dq");
-      document.body.innerHTML = "<h1>DISQUALIFIED: Tab Switching Detected</h1>";
-    }
-  </script>
+        document.addEventListener("visibilitychange", () => { if (!completed && document.hidden) dq(); });
+        window.addEventListener("blur", () => { if (!completed) dq(); });
+
+        function dq() {
+            socket.emit("dq");
+            document.querySelector(".card").innerHTML = "<h1 style='color: #ff4b2b;'>DISQUALIFIED</h1><p>Tab switching is not allowed.</p>";
+        }
+    </script>
 </body>
-</html>
+</html> 

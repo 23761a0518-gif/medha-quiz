@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Leaderboard</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Leaderboard | MEDHA 2K26</title>
+    <link rel="stylesheet" href="style.css">
+    <style> .card { max-width: 800px; } </style>
 </head>
 <body>
+    <div class="college-header">
+        <img src="college_logo.png" class="logo-img">
+        <div class="header-text">
+            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
+            <p>CSE BRANCH | LAKSHYA 2K26</p>
+        </div>
+        <img src="lakshya_logo.png" class="logo-img">
+    </div>
 
-<h2>Live Leaderboard</h2>
-<ul id="list"></ul>
+    <div class="card">
+        <h2>LIVE LEADERBOARD</h2>
+        <ul id="list"></ul>
+    </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-
-socket.on("leaderboard", teams => {
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  Object.values(teams)
-    .sort((a,b)=>b.score-a.score)
-    .forEach(t => {
-      list.innerHTML += `<li>${t.name} - ${t.score} ${t.dq?"❌":""}</li>`;
-    });
-});
-</script>
-
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        socket.on("leaderboard", teams => {
+            const list = document.getElementById("list");
+            list.innerHTML = "";
+            Object.values(teams)
+                .sort((a,b) => b.score - a.score)
+                .forEach(t => {
+                    list.innerHTML += `
+                        <li>
+                            <span>${t.name}</span>
+                            <span>
+                                <strong>${t.score} pts</strong> 
+                                ${t.dq ? '<span class="dq-label">[DQ]</span>' : ''}
+                            </span>
+                        </li>`;
+                });
+        });
+    </script>
 </body>
 </html>

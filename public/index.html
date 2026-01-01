@@ -1,35 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MEDHA Quiz - Join</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Join | MEDHA 2K26</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>MEDHA – LAKSHYA 2K26</h1>
-  <div id="box">
-    <input id="name" placeholder="Team Name">
-    <button onclick="join()">Join Quiz</button>
-  </div>
+    <div class="college-header">
+        <img src="college_logo.png" class="logo-img"> <div class="header-text">
+            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
+            <p>CSE BRANCH | LAKSHYA 2K26</p>
+        </div>
+        <img src="lakshya_logo.png" class="logo-img"> </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    if (localStorage.getItem("joined")) {
-      document.body.innerHTML = "<h2>You already attempted this quiz.</h2>";
-    }
+    <div class="card">
+        <h2>MEDHA QUIZ</h2>
+        <div id="join-form">
+            <input id="name" placeholder="Enter Team Name">
+            <button onclick="join()">JOIN QUIZ</button>
+        </div>
+    </div>
 
-    function join() {
-      const name = document.getElementById("name").value.trim();
-      if (!name) return alert("Enter team name");
-
-      const token = crypto.randomUUID();
-      localStorage.setItem("joined", "yes");
-      localStorage.setItem("token", token);
-
-      socket.emit("join", { name, token });
-      // Small timeout to ensure socket sends data before page leaves
-      setTimeout(() => { window.location.href = "/quiz"; }, 100);
-    }
-  </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        if (localStorage.getItem("joined")) {
+            document.querySelector(".card").innerHTML = "<h3>Already Attempted.</h3><p>Re-attempts are not allowed.</p>";
+        }
+        function join() {
+            const name = document.getElementById("name").value.trim();
+            if (!name) return alert("Enter team name");
+            const token = crypto.randomUUID();
+            localStorage.setItem("joined", "yes");
+            localStorage.setItem("token", token);
+            socket.emit("join", { name, token });
+            setTimeout(() => { window.location.href = "quiz.html"; }, 200);
+        }
+    </script>
 </body>
 </html>
