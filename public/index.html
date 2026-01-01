@@ -5,36 +5,31 @@
   <title>MEDHA – LAKSHYA 2K26</title>
 </head>
 <body>
+
 <h1>MEDHA – LAKSHYA 2K26</h1>
-<input id="name" placeholder="Team Name">
+
+<input id="teamName" placeholder="Enter Team Name" />
 <button onclick="join()">Join Quiz</button>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
-if(localStorage.getItem("joined")) {
-  document.body.innerHTML="<h1>DISQUALIFIED</h1>";
-}
-
-const socket = io();
-function join(){
-  const teamName = document.getElementById("name").value.trim();
-  if(!teamName){
+function join() {
+  const name = document.getElementById("teamName").value.trim();
+  if (!name) {
     alert("Enter team name");
     return;
   }
 
-  const token = Date.now()+"_"+Math.random();
-  localStorage.setItem("joined","yes");
-  localStorage.setItem("token",token);
+  // generate unique team token
+  const teamToken = Date.now() + "_" + Math.random().toString(36).slice(2);
 
-  socket.emit("join", {
-    name: teamName,
-    id: token
-  });
+  // store in browser
+  localStorage.setItem("teamName", name);
+  localStorage.setItem("teamToken", teamToken);
 
-  window.location = "quiz.html";
+  // go to quiz page
+  window.location.href = "quiz.html";
 }
-
 </script>
+
 </body>
 </html>

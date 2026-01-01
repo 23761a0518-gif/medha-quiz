@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
-<head><link rel="stylesheet" href="style.css"></head>
+<head>
+  <link rel="stylesheet" href="style.css">
+  <title>MEDHA Quiz</title>
+</head>
 <body>
+
 <h2 id="q"></h2>
 <div id="ops"></div>
 <p id="timer"></p>
@@ -9,47 +13,93 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
-let w=0, i=0, time=15, int;
-let questions=[];
 
-fetch("/questions").then(r=>r.json()).then(d=>{
-  questions=d;
-  load();
-});
+// get team info
+const teamName = localStorage.getItem("teamName");
+const teamToken = localStorage.getItem("teamToken");
 
-function load(){
-  if(i>=questions.length){
-    document.body.innerHTML="<h1>Quiz Completed</h1>";
-    return;
-  }
-  q.innerText=questions[i].Question;
-  ops.innerHTML="";
-  ["A","B","C","D"].forEach(k=>{
-    ops.innerHTML+=`<button onclick="ans('${k}')">${questions[i][k]}</button>`;
-  });
-  time=15;
-  int=setInterval(()=>{
-    timer.innerText="Time: "+time--;
-    if(time<0) next();
-  },1000);
+if (!teamName || !teamToken) {
+  document.body.innerHTML = "<h1>Unauthorized access</h1>";
+  throw new Error("No team info");
 }
 
-function ans(x){
-  clearInterval(int);
-  socket.emit("answer", x === questions[i].Answer.trim());
+// register team again with server (IMPORTANT)
+socket.emit("join", {
+  name: teamName,
+  id: teamToken
+});
+
+let questions = [];
+let index = 0;
+let time = 15;
+let timerInterval;
+let warnings = 0;
+
+// load questions
+fetch("/questions")
+  .then(res => res.json())
+  .then(data => {
+    questions = data;
+    if (questions.length === 0) {
+      document.body.innerHTML = "<h1>No questions uploaded</h1>";
+      return;
+    }
+    loadQuestion();
+  });
+
+function loadQuestion() {
+  if (index >= questions.length) {
+    document.body.innerHTML = "<h1>Quiz Completed</h1>";
+    return;
+  }
+
+  const q = questions[index];
+  document.getElementById("q").innerText = q.Question;
+
+  const opsDiv = document.getElementById("ops");
+  opsDiv.innerHTML = "";
+
+  ["A", "B", "C", "D"].forEach(opt => {
+    const btn = document.createElement("button");
+    btn.innerText = q[opt];
+    btn.onclick = () => answer(opt);
+    opsDiv.appendChild(btn);
+    opsDiv.appendChild(document.createElement("br"));
+  });
+
+  time = 15;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    document.getElementById("timer").innerText = "Time: " + time;
+    time--;
+    if (time < 0) next();
+  }, 1000);
+}
+
+function answer(selected) {
+  clearInterval(timerInterval);
+  const correct = selected === questions[index].Answer.trim();
+  socket.emit("answer", correct);
   next();
 }
 
-function next(){ i++; load(); }
+function next() {
+  index++;
+  loadQuestion();
+}
 
-document.addEventListener("visibilitychange",warn);
-window.addEventListener("blur",warn);
-window.onbeforeunload=()=>true;
+// anti-cheat
+document.addEventListener("visibilitychange", warn);
+window.addEventListener("blur", warn);
 
-function warn(){
-  w++; socket.emit("warn");
-  if(w>=2) document.body.innerHTML="<h1>DISQUALIFIED</h1>";
+function warn() {
+  warnings++;
+  socket.emit("warn");
+  if (warnings >= 2) {
+    document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
+  }
 }
 </script>
+
 </body>
 </html>
