@@ -1,6 +1,8 @@
+
 <!DOCTYPE html>
 <html>
 <head>
+  <title>MEDHA Quiz</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,11 +18,9 @@ const socket = io();
 let questions = [];
 let i = 0;
 let time = 15;
-let interval;
-let warnings = 0;
-let quizFinished = false;
+let intv;
+let completed = false;
 
-// fetch questions
 fetch("/questions")
   .then(r => r.json())
   .then(d => {
@@ -30,54 +30,58 @@ fetch("/questions")
 
 function load() {
   if (i >= questions.length) {
-    quizFinished = true;
-    localStorage.setItem("quizDone", "yes");
+    completed = true;
     document.body.innerHTML = "<h1>Quiz Completed</h1>";
     return;
   }
 
-  q.innerText = questions[i].Question;
+  const q = questions[i];
+  document.getElementById("q").innerText = q.Question;
+
+  const ops = document.getElementById("ops");
   ops.innerHTML = "";
 
   ["A","B","C","D"].forEach(k => {
-    ops.innerHTML += `<button onclick="ans('${k}')">${questions[i][k]}</button><br>`;
+    const btn = document.createElement("button");
+    btn.innerText = q[k];
+    btn.onclick = () => answer(k === q.Answer.trim());
+    ops.appendChild(btn);
   });
 
   time = 15;
-  interval = setInterval(() => {
-    timer.innerText = "Time: " + time--;
+  intv = setInterval(() => {
+    document.getElementById("timer").innerText = "Time: " + time--;
     if (time < 0) next();
   }, 1000);
 }
 
-function ans(choice) {
-  clearInterval(interval);
-  const correct = choice === questions[i].Answer.trim();
-  socket.emit("answer", correct);
+function answer(correct) {
+  clearInterval(intv);
+  socket.emit("answer", { correct });
   next();
 }
 
 function next() {
-  clearInterval(interval);
+  clearInterval(intv);
   i++;
   load();
 }
 
 // anti-cheat ONLY during quiz
-document.addEventListener("visibilitychange", cheat);
-window.addEventListener("blur", cheat);
+document.addEventListener("visibilitychange", () => {
+  if (!completed && document.hidden) dq();
+});
+window.addEventListener("blur", () => {
+  if (!completed) dq();
+});
+window.onbeforeunload = () => {
+  if (!completed) dq();
+};
 
-function cheat() {
-  if (quizFinished) return;
-
-  warnings++;
-  socket.emit("warn");
-
-  if (warnings >= 2) {
-    document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
-  }
+function dq() {
+  socket.emit("dq");
+  document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
 }
 </script>
-
 </body>
 </html>

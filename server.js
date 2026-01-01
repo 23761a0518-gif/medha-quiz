@@ -1,3 +1,4 @@
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -13,50 +14,51 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-let teams = {};
-let questions = [];
+let teams = {};      // socket.id -> team
+let questions = [];  // loaded from excel
 
 const MAX_TEAMS = 100;
+const POINTS = 10;
 
 io.on("connection", socket => {
 
-  socket.on("join", data => {
+  socket.on("join", ({ name, token }) => {
+    if (!name || !token) return;
     if (Object.keys(teams).length >= MAX_TEAMS) return;
 
+    // block rejoin from same device token
+    const exists = Object.values(teams).find(t => t.token === token);
+    if (exists) {
+      socket.emit("blocked", "Reattempt not allowed from same device");
+      return;
+    }
+
     teams[socket.id] = {
-      name: data.name,
-      device: data.device,
+      name,
+      token,
       score: 0,
-      warnings: 0,
       dq: false
     };
 
     io.emit("leaderboard", teams);
   });
 
-  socket.on("answer", isCorrect => {
+  socket.on("answer", ({ correct }) => {
     const t = teams[socket.id];
     if (!t || t.dq) return;
-
-    if (isCorrect) {
-      t.score += 10;
-    }
+    if (correct) t.score += POINTS;
     io.emit("leaderboard", teams);
   });
 
-  socket.on("warn", () => {
+  socket.on("dq", () => {
     const t = teams[socket.id];
-    if (!t || t.dq) return;
-
-    t.warnings++;
-    if (t.warnings >= 2) {
-      t.dq = true;
-    }
+    if (!t) return;
+    t.dq = true;
     io.emit("leaderboard", teams);
   });
 
   socket.on("disconnect", () => {
-    // DO NOT delete team → leaderboard must persist
+    // do NOT delete team -> preserve leaderboard on refresh
   });
 });
 
@@ -71,6 +73,5 @@ app.get("/questions", (req, res) => {
   res.json(questions);
 });
 
-server.listen(3000, () => {
-  console.log("MEDHA Quiz Running");
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log("MEDHA Quiz Running on", PORT));

@@ -1,39 +1,42 @@
+
 <!DOCTYPE html>
 <html>
 <head>
+  <title>MEDHA – LAKSHYA 2K26</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<h1>MEDHA Quiz</h1>
 
-<h2>Enter Team Name</h2>
-<input id="team" placeholder="Team Name">
-<button onclick="join()">Join Quiz</button>
+<div id="joinBox">
+  <input id="name" placeholder="Team Name">
+  <button onclick="join()">Join Quiz</button>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 
-// device lock
 if (localStorage.getItem("joined")) {
-  document.body.innerHTML = "<h1>DISQUALIFIED<br>Reattempt Not Allowed</h1>";
+  document.body.innerHTML = "<h2>You have already attempted this quiz.</h2>";
 }
 
 function join() {
-  const name = team.value.trim();
-  if (!name) {
-    alert("Enter team name");
-    return;
-  }
+  const name = document.getElementById("name").value.trim();
+  if (!name) return alert("Enter team name");
 
-  const device = navigator.userAgent;
-
+  const token = crypto.randomUUID();
   localStorage.setItem("joined", "yes");
-  localStorage.setItem("quizDone", "no");
+  localStorage.setItem("token", token);
 
-  socket.emit("join", { name, device });
+  socket.emit("join", { name, token });
   window.location = "quiz.html";
 }
-</script>
 
+socket.on("blocked", msg => {
+  alert(msg);
+  document.body.innerHTML = "<h2>Access Blocked</h2>";
+});
+</script>
 </body>
 </html>

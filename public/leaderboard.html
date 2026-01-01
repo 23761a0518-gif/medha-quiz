@@ -1,23 +1,26 @@
+
 <!DOCTYPE html>
 <html>
+<head>
+  <title>Leaderboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
-
 <h2>Live Leaderboard</h2>
 <ul id="l"></ul>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
-
 socket.on("leaderboard", data => {
+  const l = document.getElementById("l");
   l.innerHTML = "";
   Object.values(data)
-    .sort((a,b)=>b.score - a.score)
+    .sort((a,b)=>b.score-a.score)
     .forEach(t => {
-      l.innerHTML += `<li>${t.name} - ${t.score} ${t.dq ? "❌" : ""}</li>`;
+      l.innerHTML += `<li>${t.name} - ${t.score} ${t.dq?"❌":""}</li>`;
     });
 });
 </script>
-
 </body>
 </html>
