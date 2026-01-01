@@ -16,86 +16,66 @@ const socket = io();
 let questions = [];
 let i = 0;
 let time = 15;
-let timerInterval;
+let interval;
 let warnings = 0;
 let quizFinished = false;
 
-// 🔴 Refresh = DISQUALIFY
-window.onbeforeunload = () => {
-  if (!quizFinished) {
-    socket.emit("warn");
-  }
-};
-
-// 🚫 Tab switch only DURING quiz
-document.addEventListener("visibilitychange", () => {
-  if (!quizFinished && document.hidden) warn();
-});
-window.addEventListener("blur", () => {
-  if (!quizFinished) warn();
-});
-
-function warn() {
-  warnings++;
-  socket.emit("warn");
-  if (warnings >= 2) {
-    document.body.innerHTML = "<h1>❌ DISQUALIFIED</h1>";
-  }
-}
-
-// FETCH QUESTIONS
+// fetch questions
 fetch("/questions")
-  .then(res => res.json())
-  .then(data => {
-    questions = data;
-    if (questions.length === 0) {
-      document.body.innerHTML = "<h1>No Questions Uploaded</h1>";
-      return;
-    }
-    loadQuestion();
+  .then(r => r.json())
+  .then(d => {
+    questions = d;
+    load();
   });
 
-function loadQuestion() {
+function load() {
   if (i >= questions.length) {
     quizFinished = true;
-    localStorage.setItem("quizFinished", "yes");
-    document.body.innerHTML = "<h1>✅ Quiz Completed</h1>";
+    localStorage.setItem("quizDone", "yes");
+    document.body.innerHTML = "<h1>Quiz Completed</h1>";
     return;
   }
 
-  const qData = questions[i];
-  q.innerText = qData.Question;
+  q.innerText = questions[i].Question;
   ops.innerHTML = "";
 
-  ["A","B","C","D"].forEach(opt => {
-    const btn = document.createElement("button");
-    btn.innerText = qData[opt];
-    btn.onclick = () => submitAnswer(opt);
-    ops.appendChild(btn);
+  ["A","B","C","D"].forEach(k => {
+    ops.innerHTML += `<button onclick="ans('${k}')">${questions[i][k]}</button><br>`;
   });
 
   time = 15;
-  timer.innerText = "Time: " + time;
-
-  timerInterval = setInterval(() => {
-    time--;
-    timer.innerText = "Time: " + time;
-    if (time <= 0) {
-      clearInterval(timerInterval);
-      i++;
-      loadQuestion();
-    }
+  interval = setInterval(() => {
+    timer.innerText = "Time: " + time--;
+    if (time < 0) next();
   }, 1000);
 }
 
-function submitAnswer(choice) {
-  clearInterval(timerInterval);
-  socket.emit(
-    "answer",
-    choice === questions[i].Answer.trim()
-  );
+function ans(choice) {
+  clearInterval(interval);
+  const correct = choice === questions[i].Answer.trim();
+  socket.emit("answer", correct);
+  next();
+}
+
+function next() {
+  clearInterval(interval);
   i++;
-  loadQuestion();
+  load();
+}
+
+// anti-cheat ONLY during quiz
+document.addEventListener("visibilitychange", cheat);
+window.addEventListener("blur", cheat);
+
+function cheat() {
+  if (quizFinished) return;
+
+  warnings++;
+  socket.emit("warn");
+
+  if (warnings >= 2) {
+    document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
+  }
 }
 </script>
 

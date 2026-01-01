@@ -3,20 +3,18 @@
 <body>
 
 <h2>Live Leaderboard</h2>
-<ul id="list"></ul>
+<ul id="l"></ul>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
 
-socket.on("leaderboard", teams => {
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  Object.values(teams)
-    .sort((a,b) => b.score - a.score)
+socket.on("leaderboard", data => {
+  l.innerHTML = "";
+  Object.values(data)
+    .sort((a,b)=>b.score - a.score)
     .forEach(t => {
-      list.innerHTML += `<li>${t.name} – ${t.score}</li>`;
+      l.innerHTML += `<li>${t.name} - ${t.score} ${t.dq ? "❌" : ""}</li>`;
     });
 });
 </script>
