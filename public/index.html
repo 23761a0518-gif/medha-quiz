@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,7 +5,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <h1>MEDHA Quiz</h1>
+
+<script>
+if (localStorage.getItem("joined")) {
+  document.body.innerHTML = "<h2>You already attempted this quiz.</h2>";
+}
+</script>
 
 <div id="joinBox">
   <input id="name" placeholder="Team Name">
@@ -16,10 +22,6 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
-
-if (localStorage.getItem("joined")) {
-  document.body.innerHTML = "<h2>You have already attempted this quiz.</h2>";
-}
 
 function join() {
   const name = document.getElementById("name").value.trim();
@@ -38,5 +40,6 @@ socket.on("blocked", msg => {
   document.body.innerHTML = "<h2>Access Blocked</h2>";
 });
 </script>
+
 </body>
 </html>

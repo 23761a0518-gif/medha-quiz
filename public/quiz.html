@@ -15,9 +15,9 @@
 const socket = io();
 
 let questions = [];
-let i = 0;
+let index = 0;
 let time = 15;
-let intv;
+let timer;
 let completed = false;
 
 fetch("/questions")
@@ -28,13 +28,13 @@ fetch("/questions")
   });
 
 function load() {
-  if (i >= questions.length) {
+  if (index >= questions.length) {
     completed = true;
     document.body.innerHTML = "<h1>Quiz Completed</h1>";
     return;
   }
 
-  const q = questions[i];
+  const q = questions[index];
   document.getElementById("q").innerText = q.Question;
 
   const ops = document.getElementById("ops");
@@ -43,41 +43,41 @@ function load() {
   ["A","B","C","D"].forEach(k => {
     const btn = document.createElement("button");
     btn.innerText = q[k];
-    btn.onclick = () => submitAnswer(k === q.Answer.trim());
+    btn.onclick = () => submit(k === q.Answer.trim());
     ops.appendChild(btn);
   });
 
   time = 15;
-  intv = setInterval(() => {
+  timer = setInterval(() => {
     document.getElementById("timer").innerText = "Time: " + time--;
     if (time < 0) next();
   }, 1000);
 }
 
-function submitAnswer(isCorrect) {
-  clearInterval(intv);
-  socket.emit("answer", { correct: isCorrect });
+function submit(correct) {
+  clearInterval(timer);
+  socket.emit("answer", { correct });
   next();
 }
 
 function next() {
-  clearInterval(intv);
-  i++;
+  clearInterval(timer);
+  index++;
   load();
 }
 
-// anti-cheat only DURING quiz
+/* Anti-cheat ONLY during quiz */
 document.addEventListener("visibilitychange", () => {
-  if (!completed && document.hidden) disqualify();
+  if (!completed && document.hidden) dq();
 });
 window.addEventListener("blur", () => {
-  if (!completed) disqualify();
+  if (!completed) dq();
 });
 window.onbeforeunload = () => {
-  if (!completed) disqualify();
+  if (!completed) dq();
 };
 
-function disqualify() {
+function dq() {
   socket.emit("dq");
   document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
 }

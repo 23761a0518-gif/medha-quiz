@@ -13,7 +13,7 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-let teams = {};        // token -> team
+let teams = {};        // token -> team object
 let socketToToken = {}; // socket.id -> token
 let questions = [];
 
@@ -24,7 +24,7 @@ io.on("connection", socket => {
   socket.on("join", ({ name, token }) => {
     if (!name || !token) return;
 
-    // prevent reattempt from same device
+    // Block reattempt from same device
     if (teams[token]) {
       socket.emit("blocked", "Reattempt not allowed");
       return;
@@ -37,7 +37,6 @@ io.on("connection", socket => {
     };
 
     socketToToken[socket.id] = token;
-
     io.emit("leaderboard", teams);
   });
 
@@ -81,4 +80,4 @@ app.get("/questions", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("MEDHA Quiz Running on", PORT));
+server.listen(PORT, () => console.log("MEDHA Quiz Running"));
