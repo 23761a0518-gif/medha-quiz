@@ -1,13 +1,25 @@
+<!DOCTYPE html>
+<html>
+<body>
+
 <h2>Live Leaderboard</h2>
-<ul id="l"></ul>
+<ul id="list"></ul>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
-io().on("leaderboard",d=>{
- l.innerHTML="";
- Object.values(d)
- .sort((a,b)=>b.score-a.score)
- .forEach(t=>{
-  l.innerHTML+=`<li>${t.name} - ${t.score} ${t.dq?"❌":""}</li>`;
- });
+const socket = io();
+
+socket.on("leaderboard", teams => {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  Object.values(teams)
+    .sort((a,b) => b.score - a.score)
+    .forEach(t => {
+      list.innerHTML += `<li>${t.name} – ${t.score}</li>`;
+    });
 });
 </script>
+
+</body>
+</html>

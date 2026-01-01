@@ -2,7 +2,6 @@
 <html>
 <head>
   <link rel="stylesheet" href="style.css">
-  <title>MEDHA Quiz</title>
 </head>
 <body>
 
@@ -14,90 +13,89 @@
 <script>
 const socket = io();
 
-// get team info
-const teamName = localStorage.getItem("teamName");
-const teamToken = localStorage.getItem("teamToken");
-
-if (!teamName || !teamToken) {
-  document.body.innerHTML = "<h1>Unauthorized access</h1>";
-  throw new Error("No team info");
-}
-
-// register team again with server (IMPORTANT)
-socket.emit("join", {
-  name: teamName,
-  id: teamToken
-});
-
 let questions = [];
-let index = 0;
+let i = 0;
 let time = 15;
 let timerInterval;
 let warnings = 0;
+let quizFinished = false;
 
-// load questions
+// 🔴 Refresh = DISQUALIFY
+window.onbeforeunload = () => {
+  if (!quizFinished) {
+    socket.emit("warn");
+  }
+};
+
+// 🚫 Tab switch only DURING quiz
+document.addEventListener("visibilitychange", () => {
+  if (!quizFinished && document.hidden) warn();
+});
+window.addEventListener("blur", () => {
+  if (!quizFinished) warn();
+});
+
+function warn() {
+  warnings++;
+  socket.emit("warn");
+  if (warnings >= 2) {
+    document.body.innerHTML = "<h1>❌ DISQUALIFIED</h1>";
+  }
+}
+
+// FETCH QUESTIONS
 fetch("/questions")
   .then(res => res.json())
   .then(data => {
     questions = data;
     if (questions.length === 0) {
-      document.body.innerHTML = "<h1>No questions uploaded</h1>";
+      document.body.innerHTML = "<h1>No Questions Uploaded</h1>";
       return;
     }
     loadQuestion();
   });
 
 function loadQuestion() {
-  if (index >= questions.length) {
-    document.body.innerHTML = "<h1>Quiz Completed</h1>";
+  if (i >= questions.length) {
+    quizFinished = true;
+    localStorage.setItem("quizFinished", "yes");
+    document.body.innerHTML = "<h1>✅ Quiz Completed</h1>";
     return;
   }
 
-  const q = questions[index];
-  document.getElementById("q").innerText = q.Question;
+  const qData = questions[i];
+  q.innerText = qData.Question;
+  ops.innerHTML = "";
 
-  const opsDiv = document.getElementById("ops");
-  opsDiv.innerHTML = "";
-
-  ["A", "B", "C", "D"].forEach(opt => {
+  ["A","B","C","D"].forEach(opt => {
     const btn = document.createElement("button");
-    btn.innerText = q[opt];
-    btn.onclick = () => answer(opt);
-    opsDiv.appendChild(btn);
-    opsDiv.appendChild(document.createElement("br"));
+    btn.innerText = qData[opt];
+    btn.onclick = () => submitAnswer(opt);
+    ops.appendChild(btn);
   });
 
   time = 15;
-  clearInterval(timerInterval);
+  timer.innerText = "Time: " + time;
+
   timerInterval = setInterval(() => {
-    document.getElementById("timer").innerText = "Time: " + time;
     time--;
-    if (time < 0) next();
+    timer.innerText = "Time: " + time;
+    if (time <= 0) {
+      clearInterval(timerInterval);
+      i++;
+      loadQuestion();
+    }
   }, 1000);
 }
 
-function answer(selected) {
+function submitAnswer(choice) {
   clearInterval(timerInterval);
-  const correct = selected === questions[index].Answer.trim();
-  socket.emit("answer", correct);
-  next();
-}
-
-function next() {
-  index++;
+  socket.emit(
+    "answer",
+    choice === questions[i].Answer.trim()
+  );
+  i++;
   loadQuestion();
-}
-
-// anti-cheat
-document.addEventListener("visibilitychange", warn);
-window.addEventListener("blur", warn);
-
-function warn() {
-  warnings++;
-  socket.emit("warn");
-  if (warnings >= 2) {
-    document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
-  }
 }
 </script>
 

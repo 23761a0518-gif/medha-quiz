@@ -1,33 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="style.css">
   <title>MEDHA – LAKSHYA 2K26</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>MEDHA – LAKSHYA 2K26</h1>
 
-<input id="teamName" placeholder="Enter Team Name" />
-<button onclick="join()">Join Quiz</button>
+<div id="joinBox">
+  <input id="teamName" placeholder="Enter Team Name">
+  <button onclick="join()">Join Quiz</button>
+</div>
 
+<h2 id="msg"></h2>
+
+<script src="/socket.io/socket.io.js"></script>
 <script>
+const socket = io();
+
+// BLOCK reattempt from same device
+if (localStorage.getItem("joined") === "yes") {
+  document.body.innerHTML = "<h1>❌ Reattempt not allowed</h1>";
+}
+
 function join() {
-  const name = document.getElementById("teamName").value.trim();
+  const name = teamName.value.trim();
   if (!name) {
     alert("Enter team name");
     return;
   }
 
-  // generate unique team token
-  const teamToken = Date.now() + "_" + Math.random().toString(36).slice(2);
+  const token = Date.now() + "_" + Math.random();
 
-  // store in browser
-  localStorage.setItem("teamName", name);
-  localStorage.setItem("teamToken", teamToken);
+  localStorage.setItem("joined", "yes");
+  localStorage.setItem("token", token);
 
-  // go to quiz page
-  window.location.href = "quiz.html";
+  socket.emit("join", { name, id: token });
+  location.href = "quiz.html";
 }
 </script>
 
