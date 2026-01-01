@@ -16,7 +16,7 @@ const socket = io();
 let questions = [];
 let i = 0;
 let time = 15;
-let timer;
+let timerId;
 let completed = false;
 
 fetch("/questions")
@@ -47,34 +47,31 @@ function load() {
   });
 
   time = 15;
-  timer = setInterval(() => {
+  timerId = setInterval(() => {
     document.getElementById("timer").innerText = "Time: " + time--;
     if (time < 0) next();
   }, 1000);
 }
 
 function submit(correct) {
-  clearInterval(timer);
+  clearInterval(timerId);
   socket.emit("answer", { correct });
   next();
 }
 
 function next() {
-  clearInterval(timer);
+  clearInterval(timerId);
   i++;
   load();
 }
 
-/* Anti-cheat ONLY before completion */
+/* anti-cheat ONLY during quiz */
 document.addEventListener("visibilitychange", () => {
   if (!completed && document.hidden) dq();
 });
 window.addEventListener("blur", () => {
   if (!completed) dq();
 });
-window.onbeforeunload = () => {
-  if (!completed) dq();
-};
 
 function dq() {
   socket.emit("dq");

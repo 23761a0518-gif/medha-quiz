@@ -12,6 +12,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
+
 socket.on("leaderboard", teams => {
   const list = document.getElementById("list");
   list.innerHTML = "";

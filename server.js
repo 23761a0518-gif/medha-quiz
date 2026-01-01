@@ -13,7 +13,7 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-let teams = {};          // token -> team
+let teams = {};        // token -> team
 let socketToToken = {}; // socket.id -> token
 let questions = [];
 
@@ -24,6 +24,7 @@ io.on("connection", socket => {
   socket.on("join", ({ name, token }) => {
     if (!name || !token) return;
 
+    // block reattempt from same device
     if (teams[token]) {
       socket.emit("blocked");
       return;
@@ -48,7 +49,6 @@ io.on("connection", socket => {
 
     if (correct === true) {
       team.score += POINTS;
-      console.log(team.name, "score =", team.score);
     }
 
     io.emit("leaderboard", teams);
