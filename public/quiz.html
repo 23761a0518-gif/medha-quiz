@@ -1,83 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MEDHA Quiz</title>
+  <title>MEDHA Quiz - Live</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <h2 id="q">Waiting for questions...</h2>
+  <div id="ops"></div>
+  <p id="timer"></p>
 
-<h2 id="q"></h2>
-<div id="ops"></div>
-<p id="timer"></p>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const token = localStorage.getItem("token");
+    let questions = [], i = 0, time = 15, timerId, completed = false;
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-let questions = [];
-let i = 0;
-let time = 15;
-let timerId;
-let completed = false;
+    if (token) socket.emit("rejoin", token);
+    else window.location.href = "/";
 
-fetch("/questions")
-  .then(r => r.json())
-  .then(d => {
-    questions = d;
-    load();
-  });
+    fetch("/questions")
+      .then(r => r.json())
+      .then(d => { 
+        questions = d; 
+        if(questions.length > 0) load(); 
+        else document.getElementById("q").innerText = "No questions uploaded yet.";
+      });
 
-function load() {
-  if (i >= questions.length) {
-    completed = true;
-    document.body.innerHTML = "<h1>Quiz Completed</h1>";
-    return;
-  }
+    function load() {
+      if (i >= questions.length) {
+        completed = true;
+        document.body.innerHTML = "<h1>Quiz Completed! Check Leaderboard.</h1>";
+        return;
+      }
+      const q = questions[i];
+      document.getElementById("q").innerText = q.Question;
+      const ops = document.getElementById("ops");
+      ops.innerHTML = "";
 
-  const q = questions[i];
-  document.getElementById("q").innerText = q.Question;
+      ["A","B","C","D"].forEach(k => {
+        const btn = document.createElement("button");
+        btn.innerText = q[k];
+        btn.onclick = () => {
+          // Disable buttons to prevent double clicking
+          Array.from(ops.getElementsByTagName('button')).forEach(b => b.disabled = true);
+          submit(k === q.Answer.trim());
+        };
+        ops.appendChild(btn);
+      });
 
-  const ops = document.getElementById("ops");
-  ops.innerHTML = "";
+      time = 15;
+      clearInterval(timerId);
+      timerId = setInterval(() => {
+        document.getElementById("timer").innerText = "Time: " + time--;
+        if (time < 0) next();
+      }, 1000);
+    }
 
-  ["A","B","C","D"].forEach(k => {
-    const btn = document.createElement("button");
-    btn.innerText = q[k];
-    btn.onclick = () => submit(k === q.Answer.trim());
-    ops.appendChild(btn);
-  });
+    function submit(correct) {
+      clearInterval(timerId);
+      socket.emit("answer", { correct });
+      next();
+    }
 
-  time = 15;
-  timerId = setInterval(() => {
-    document.getElementById("timer").innerText = "Time: " + time--;
-    if (time < 0) next();
-  }, 1000);
-}
+    function next() {
+      i++;
+      load();
+    }
 
-function submit(correct) {
-  clearInterval(timerId);
-  socket.emit("answer", { correct });
-  next();
-}
+    document.addEventListener("visibilitychange", () => { if (!completed && document.hidden) dq(); });
+    window.addEventListener("blur", () => { if (!completed) dq(); });
 
-function next() {
-  clearInterval(timerId);
-  i++;
-  load();
-}
-
-/* anti-cheat ONLY during quiz */
-document.addEventListener("visibilitychange", () => {
-  if (!completed && document.hidden) dq();
-});
-window.addEventListener("blur", () => {
-  if (!completed) dq();
-});
-
-function dq() {
-  socket.emit("dq");
-  document.body.innerHTML = "<h1>DISQUALIFIED</h1>";
-}
-</script>
-
+    function dq() {
+      socket.emit("dq");
+      document.body.innerHTML = "<h1>DISQUALIFIED: Tab Switching Detected</h1>";
+    }
+  </script>
 </body>
 </html>

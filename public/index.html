@@ -1,42 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MEDHA Quiz</title>
+  <title>MEDHA Quiz - Join</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <h1>MEDHA – LAKSHYA 2K26</h1>
+  <div id="box">
+    <input id="name" placeholder="Team Name">
+    <button onclick="join()">Join Quiz</button>
+  </div>
 
-<h1>MEDHA – LAKSHYA 2K26</h1>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    if (localStorage.getItem("joined")) {
+      document.body.innerHTML = "<h2>You already attempted this quiz.</h2>";
+    }
 
-<div id="box">
-  <input id="name" placeholder="Team Name">
-  <button onclick="join()">Join Quiz</button>
-</div>
+    function join() {
+      const name = document.getElementById("name").value.trim();
+      if (!name) return alert("Enter team name");
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
+      const token = crypto.randomUUID();
+      localStorage.setItem("joined", "yes");
+      localStorage.setItem("token", token);
 
-if (localStorage.getItem("joined")) {
-  document.body.innerHTML = "<h2>You already attempted this quiz.</h2>";
-}
-
-function join() {
-  const name = document.getElementById("name").value.trim();
-  if (!name) return alert("Enter team name");
-
-  const token = crypto.randomUUID();
-  localStorage.setItem("joined", "yes");
-  localStorage.setItem("token", token);
-
-  socket.emit("join", { name, token });
-  window.location = "quiz.html";
-}
-
-socket.on("blocked", () => {
-  document.body.innerHTML = "<h2>Reattempt not allowed.</h2>";
-});
-</script>
-
+      socket.emit("join", { name, token });
+      // Small timeout to ensure socket sends data before page leaves
+      setTimeout(() => { window.location.href = "/quiz"; }, 100);
+    }
+  </script>
 </body>
 </html>
