@@ -1,4 +1,3 @@
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -14,51 +13,61 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-let teams = {};      // socket.id -> team
-let questions = [];  // loaded from excel
+let teams = {}; // token -> team
+let socketMap = {}; // socket.id -> token
+let questions = [];
 
-const MAX_TEAMS = 100;
 const POINTS = 10;
 
 io.on("connection", socket => {
 
   socket.on("join", ({ name, token }) => {
     if (!name || !token) return;
-    if (Object.keys(teams).length >= MAX_TEAMS) return;
 
-    // block rejoin from same device token
-    const exists = Object.values(teams).find(t => t.token === token);
-    if (exists) {
-      socket.emit("blocked", "Reattempt not allowed from same device");
+    // block reattempt from same device
+    if (teams[token]) {
+      socket.emit("blocked", "Reattempt not allowed");
       return;
     }
 
-    teams[socket.id] = {
+    teams[token] = {
       name,
-      token,
       score: 0,
       dq: false
     };
 
+    socketMap[socket.id] = token;
     io.emit("leaderboard", teams);
   });
 
-  socket.on("answer", ({ correct }) => {
-    const t = teams[socket.id];
-    if (!t || t.dq) return;
-    if (correct) t.score += POINTS;
-    io.emit("leaderboard", teams);
-  });
+  socket.on("answer", data => {
+  const t = teams[socket.id];
+  if (!t || t.dq) return;
+
+  // SUPPORT BOTH formats (safety)
+  const correct =
+    typeof data === "boolean"
+      ? data
+      : data && data.correct === true;
+
+  if (correct) {
+    t.score += 10;
+    console.log("Score added to", t.name, "=", t.score);
+  }
+
+  io.emit("leaderboard", teams);
+});
+
 
   socket.on("dq", () => {
-    const t = teams[socket.id];
-    if (!t) return;
-    t.dq = true;
+    const token = socketMap[socket.id];
+    if (!token) return;
+    teams[token].dq = true;
     io.emit("leaderboard", teams);
   });
 
   socket.on("disconnect", () => {
-    // do NOT delete team -> preserve leaderboard on refresh
+    delete socketMap[socket.id];
   });
 });
 
@@ -74,4 +83,4 @@ app.get("/questions", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("MEDHA Quiz Running on", PORT));
+server.listen(PORT, () => console.log("MEDHA Quiz Running"));
