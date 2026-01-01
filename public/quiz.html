@@ -36,7 +36,7 @@ function load(){
 
 function ans(x){
   clearInterval(int);
-  socket.emit("answer", x===questions[i].Answer);
+  socket.emit("answer", x === questions[i].Answer.trim());
   next();
 }
 

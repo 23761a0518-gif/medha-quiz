@@ -44,12 +44,14 @@ io.on("connection", socket => {
     io.emit("leaderboard", teams);
   });
 
-  socket.on("answer", ok => {
-    const t = teams[socket.id];
-    if (!t || t.dq) return;
-    if (ok) t.score += 10;
-    io.emit("leaderboard", teams);
-  });
+socket.on("answer", ok => {
+  console.log("Answer received:", ok);
+  const t = teams[socket.id];
+  if (!t || t.dq) return;
+  if (ok) t.score += 10;
+  io.emit("leaderboard", teams);
+});
+
 
 });
 
