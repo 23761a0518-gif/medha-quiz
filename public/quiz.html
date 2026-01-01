@@ -13,9 +13,8 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
-
 let questions = [];
-let index = 0;
+let i = 0;
 let time = 15;
 let timer;
 let completed = false;
@@ -28,13 +27,13 @@ fetch("/questions")
   });
 
 function load() {
-  if (index >= questions.length) {
+  if (i >= questions.length) {
     completed = true;
     document.body.innerHTML = "<h1>Quiz Completed</h1>";
     return;
   }
 
-  const q = questions[index];
+  const q = questions[i];
   document.getElementById("q").innerText = q.Question;
 
   const ops = document.getElementById("ops");
@@ -62,11 +61,11 @@ function submit(correct) {
 
 function next() {
   clearInterval(timer);
-  index++;
+  i++;
   load();
 }
 
-/* Anti-cheat ONLY during quiz */
+/* Anti-cheat ONLY before completion */
 document.addEventListener("visibilitychange", () => {
   if (!completed && document.hidden) dq();
 });

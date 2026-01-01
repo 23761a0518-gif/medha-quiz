@@ -6,15 +6,9 @@
 </head>
 <body>
 
-<h1>MEDHA Quiz</h1>
+<h1>MEDHA QUIZ</h1>
 
-<script>
-if (localStorage.getItem("joined")) {
-  document.body.innerHTML = "<h2>You already attempted this quiz.</h2>";
-}
-</script>
-
-<div id="joinBox">
+<div id="box">
   <input id="name" placeholder="Team Name">
   <button onclick="join()">Join Quiz</button>
 </div>
@@ -22,6 +16,10 @@ if (localStorage.getItem("joined")) {
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io();
+
+if (localStorage.getItem("joined")) {
+  document.body.innerHTML = "<h2>You already attempted this quiz.</h2>";
+}
 
 function join() {
   const name = document.getElementById("name").value.trim();
@@ -35,9 +33,8 @@ function join() {
   window.location = "quiz.html";
 }
 
-socket.on("blocked", msg => {
-  alert(msg);
-  document.body.innerHTML = "<h2>Access Blocked</h2>";
+socket.on("blocked", () => {
+  document.body.innerHTML = "<h2>Reattempt not allowed</h2>";
 });
 </script>
 

@@ -1,8 +1,7 @@
-
 body {
   background:#0f172a;
   color:#e5e7eb;
-  font-family:Arial, sans-serif;
+  font-family:Arial;
   text-align:center;
 }
 button {
@@ -11,9 +10,11 @@ button {
   background:#22c55e;
   border:none;
   font-size:16px;
-  cursor:pointer;
 }
 input {
   padding:10px;
   font-size:16px;
+}
+h1 {
+  color:#3b82f6;
 }
