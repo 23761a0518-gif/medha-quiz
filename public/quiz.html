@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head><link rel="stylesheet" href="style.css"></head>
+<body>
+<h2 id="q"></h2>
+<div id="ops"></div>
+<p id="timer"></p>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let w=0, i=0, time=15, int;
+let questions=[];
+
+fetch("/questions").then(r=>r.json()).then(d=>{
+  questions=d;
+  load();
+});
+
+function load(){
+  if(i>=questions.length){
+    document.body.innerHTML="<h1>Quiz Completed</h1>";
+    return;
+  }
+  q.innerText=questions[i].Question;
+  ops.innerHTML="";
+  ["A","B","C","D"].forEach(k=>{
+    ops.innerHTML+=`<button onclick="ans('${k}')">${questions[i][k]}</button>`;
+  });
+  time=15;
+  int=setInterval(()=>{
+    timer.innerText="Time: "+time--;
+    if(time<0) next();
+  },1000);
+}
+
+function ans(x){
+  clearInterval(int);
+  socket.emit("answer", x===questions[i].Answer);
+  next();
+}
+
+function next(){ i++; load(); }
+
+document.addEventListener("visibilitychange",warn);
+window.addEventListener("blur",warn);
+window.onbeforeunload=()=>true;
+
+function warn(){
+  w++; socket.emit("warn");
+  if(w>=2) document.body.innerHTML="<h1>DISQUALIFIED</h1>";
+}
+</script>
+</body>
+</html>

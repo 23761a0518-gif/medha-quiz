@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="style.css">
+  <title>MEDHA – LAKSHYA 2K26</title>
+</head>
+<body>
+<h1>MEDHA – LAKSHYA 2K26</h1>
+<input id="name" placeholder="Team Name">
+<button onclick="join()">Join Quiz</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+if(localStorage.getItem("joined")) {
+  document.body.innerHTML="<h1>DISQUALIFIED</h1>";
+}
+
+const socket = io();
+function join(){
+  const token = Date.now()+"_"+Math.random();
+  localStorage.setItem("joined","yes");
+  localStorage.setItem("token",token);
+  socket.emit("join",{name:name.value,id:token});
+  location="quiz.html";
+}
+</script>
+</body>
+</html>
