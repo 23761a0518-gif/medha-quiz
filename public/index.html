@@ -17,12 +17,24 @@ if(localStorage.getItem("joined")) {
 
 const socket = io();
 function join(){
+  const teamName = document.getElementById("name").value.trim();
+  if(!teamName){
+    alert("Enter team name");
+    return;
+  }
+
   const token = Date.now()+"_"+Math.random();
   localStorage.setItem("joined","yes");
   localStorage.setItem("token",token);
-  socket.emit("join",{name:name.value,id:token});
-  location="quiz.html";
+
+  socket.emit("join", {
+    name: teamName,
+    id: token
+  });
+
+  window.location = "quiz.html";
 }
+
 </script>
 </body>
 </html>

@@ -27,7 +27,7 @@ io.on("connection", socket => {
     if (Object.keys(teams).length >= MAX_TEAMS) return;
 
     teams[socket.id] = {
-      name: token.name,
+      name: token.name || "Unknown Team",
       token: token.id,
       score: 0,
       warnings: 0,
