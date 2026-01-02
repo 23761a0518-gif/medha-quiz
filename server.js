@@ -23,12 +23,12 @@ io.on("connection", socket => {
         if (teams[token]) {
             socketToToken[socket.id] = token;
             
-            // Auto-DQ if they try to reconnect while the quiz is active
-            if (teams[token].currentQ > 0 && !teams[token].completed && !teams[token].dq) {
-                teams[token].dq = true;
-                io.emit("leaderboard", teams);
+            // Clear any pending DQ timer because they successfully rejoined
+            if (teams[token].dqTimer) {
+                clearTimeout(teams[token].dqTimer);
+                teams[token].dqTimer = null;
             }
-            
+
             socket.emit("sync_state", { 
                 currentQ: teams[token].currentQ, 
                 dq: teams[token].dq,
@@ -38,10 +38,17 @@ io.on("connection", socket => {
     });
 
     socket.on("join", ({ name, token }) => {
-        if (!/^\d{3}$/.test(name)) return; // Strict 3-digit check
+        if (!/^\d{3}$/.test(name)) return;
         if (teams[token]) return socket.emit("blocked");
         
-        teams[token] = { name, score: 0, dq: false, currentQ: 0, completed: false };
+        teams[token] = { 
+            name, 
+            score: 0, 
+            dq: false, 
+            currentQ: 0, 
+            completed: false,
+            dqTimer: null 
+        };
         socketToToken[socket.id] = token;
         io.emit("leaderboard", teams);
     });
@@ -76,10 +83,16 @@ io.on("connection", socket => {
 
     socket.on("disconnect", () => {
         const token = socketToToken[socket.id];
-        // If they disconnect during the quiz, DQ them
-        if (token && teams[token] && !teams[token].completed && !teams[token].dq) {
-            teams[token].dq = true; 
-            io.emit("leaderboard", teams);
+        const team = teams[token];
+
+        if (token && team && !team.completed && !team.dq) {
+            // GRACE PERIOD: Wait 5 seconds before DQing. 
+            // This allows for page transitions (index -> quiz)
+            team.dqTimer = setTimeout(() => {
+                team.dq = true;
+                io.emit("leaderboard", teams);
+                team.dqTimer = null;
+            }, 5000); 
         }
         delete socketToToken[socket.id];
     });
@@ -96,4 +109,4 @@ app.post("/upload", upload.single("file"), (req, res) => {
 app.get("/questions", (req, res) => res.json(questions));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`LAKSHYA 2K26 Server Running on ${PORT}`));
+server.listen(PORT, () => console.log(`LAKSHYA 2K26 Fixed Server Running` Sun));
