@@ -22,6 +22,9 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        // NEW: Tells the server to send live data here
+        socket.emit("register_monitor");
+
         async function uploadFile() {
             const file = document.getElementById('fileInput').files[0];
             const formData = new FormData(); formData.append('file', file);

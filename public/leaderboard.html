@@ -18,6 +18,9 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        // NEW: Tells the server to send live data here
+        socket.emit("register_monitor");
+
         socket.on("leaderboard", teams => {
             const list = document.getElementById("list");
             list.innerHTML = "";

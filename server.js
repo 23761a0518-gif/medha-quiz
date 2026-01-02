@@ -19,6 +19,12 @@ let socketToToken = {};
 let questions = [];
 
 io.on("connection", socket => {
+    // Optimization for 100 people: Only Admin/Leaderboard join monitors room
+    socket.on("register_monitor", () => {
+        socket.join("monitors");
+        socket.emit("leaderboard", teams);
+    });
+
     socket.on("rejoin", (token) => {
         if (teams[token]) {
             socketToToken[socket.id] = token;
@@ -35,9 +41,9 @@ io.on("connection", socket => {
     });
 
     socket.on("join", ({ name, token }) => {
-        if (!/^\d{3}$/.test(name)) return;
+        // CHANGED: Regex to allow 1 to 3 digits
+        if (!/^\d{1,3}$/.test(name)) return;
 
-        // Check if Team ID is already taken
         const isTaken = Object.values(teams).some(t => t.name === name);
         if (isTaken) {
             return socket.emit("error_msg", "This Team ID is already registered!");
@@ -54,7 +60,9 @@ io.on("connection", socket => {
             dqTimer: null 
         };
         socketToToken[socket.id] = token;
-        io.emit("leaderboard", teams);
+        
+        // Only broadcast to monitors room to save server bandwidth
+        io.to("monitors").emit("leaderboard", teams);
         socket.emit("join_success");
     });
 
@@ -67,21 +75,22 @@ io.on("connection", socket => {
         team.currentQ++; 
         
         if(team.currentQ >= questions.length) team.completed = true;
-        io.emit("leaderboard", teams);
+        io.to("monitors").emit("leaderboard", teams);
     });
 
     socket.on("dq_signal", () => {
         const token = socketToToken[socket.id];
         if (token && teams[token]) {
             teams[token].dq = true;
-            io.emit("leaderboard", teams);
+            socket.emit("force_dq"); // NEW: Tells the client to lock the screen immediately
+            io.to("monitors").emit("leaderboard", teams);
         }
     });
 
     socket.on("qualify_team", (token) => {
         if (teams[token]) {
             teams[token].dq = false;
-            io.emit("leaderboard", teams);
+            io.to("monitors").emit("leaderboard", teams);
             io.emit("restored", token); 
         }
     });
@@ -92,7 +101,7 @@ io.on("connection", socket => {
         if (token && team && !team.completed && !team.dq) {
             team.dqTimer = setTimeout(() => {
                 team.dq = true;
-                io.emit("leaderboard", teams);
+                io.to("monitors").emit("leaderboard", teams);
                 team.dqTimer = null;
             }, 5000); 
         }

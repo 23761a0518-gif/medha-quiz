@@ -26,6 +26,9 @@
         if (!token) window.location.href = "index.html";
         socket.emit("rejoin", token);
 
+        // NEW: Forced DQ lock from server
+        socket.on("force_dq", () => showDQ());
+
         socket.on("sync_state", data => {
             i = data.currentQ;
             if (data.dq) return showDQ();
@@ -49,6 +52,7 @@
                 const btn = document.createElement("button");
                 btn.innerText = q[k];
                 btn.onclick = () => {
+                    if(isDq) return; // Prevent clicking if DQ
                     clearInterval(timerId);
                     socket.emit("answer", { correct: k === q.Answer.trim() });
                     i++; load();
@@ -69,6 +73,7 @@
 
         function showDQ() {
             isDq = true;
+            clearInterval(timerId);
             document.getElementById("quiz-container").innerHTML = `<h1 style="color: #ff4b2b;">DISQUALIFIED</h1><p>Tab switching or Refresh detected.<br>Please inform the Admin.</p>`;
         }
 
@@ -76,8 +81,16 @@
             document.getElementById("quiz-container").innerHTML = `<h2>Quiz Completed!</h2><p>Your responses have been recorded.</p>`;
         }
 
-        document.addEventListener("visibilitychange", () => { if (document.hidden && !isDq) socket.emit("dq_signal"); });
-        window.addEventListener("blur", () => { if (!isDq) socket.emit("dq_signal"); });
+        // IMPROVED: Combined triggers
+        function handleViolation() {
+            if (!isDq) {
+                socket.emit("dq_signal");
+                showDQ();
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => { if (document.hidden) handleViolation(); });
+        window.addEventListener("blur", handleViolation);
     </script>
 </body>
 </html>
