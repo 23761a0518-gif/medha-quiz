@@ -1,77 +1,139 @@
-<script>
-    const socket = io();
-    const token = localStorage.getItem("token");
-    let questions = [], i = 0, timerId, isDq = false, isFinished = false;
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz | LAKSHYA 2K26</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body oncontextmenu="return false;">
+    <div class="college-header">
+        <img src="college_logo.png" class="logo-img">
+        <div class="header-text">
+            <h1>LBRCE CSE</h1>
+            <p id="overview" style="color: #ffcc00; font-weight: bold;">Loading Quiz...</p>
+        </div>
+        <img src="lakshya_logo.png" class="logo-img">
+    </div>
 
-    if (!token) location.href = "index.html";
-    socket.emit("rejoin", token);
-    
-    socket.on("force_dq", () => showDQ());
-    socket.on("force_logout", () => { localStorage.clear(); location.href="index.html"; });
+    <div class="card" id="quiz-container">
+        <div id="timer" style="font-weight: bold; color: var(--primary); margin-bottom: 10px; font-size: 1.2rem;">Time: 15</div>
+        <h3 id="q">Waiting for server...</h3>
+        <div id="ops"></div>
+    </div>
 
-    socket.on("sync_state", data => {
-        i = data.currentQ;
-        if (data.dq) return showDQ();
-        if (data.completed) return showFinished();
-        
-        fetch("/questions").then(r => r.json()).then(qs => {
-            questions = qs;
-            load();
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const token = localStorage.getItem("token");
+        let questions = [], i = 0, timerId, isDq = false, isFinished = false;
+
+        if (!token) window.location.href = "index.html";
+
+        // Reconnect and sync status
+        socket.emit("rejoin", token);
+
+        // Listen for server-side events
+        socket.on("force_dq", () => showDQ());
+        socket.on("force_logout", () => { 
+            localStorage.clear(); 
+            location.href = "index.html"; 
         });
-    });
 
-    socket.on("restored", t => { if (t === token) location.reload(); });
-
-    function load() {
-        if (i >= questions.length) return showFinished();
-        document.getElementById("overview").innerText = `Question ${i + 1} of ${questions.length}`;
-        const q = questions[i];
-        document.getElementById("q").innerText = q.Question;
-        const ops = document.getElementById("ops");
-        ops.innerHTML = "";
-        ["A","B","C","D"].forEach(k => {
-            const btn = document.createElement("button");
-            btn.innerText = q[k];
-            btn.onclick = () => {
-                if(isDq || isFinished) return;
-                clearInterval(timerId);
-                socket.emit("answer", { correct: k === q.Answer.trim() });
-                i++; load();
-            };
-            ops.appendChild(btn);
+        socket.on("sync_state", data => {
+            i = data.currentQ;
+            if (data.dq) return showDQ();
+            if (data.completed) return showFinished();
+            
+            fetch("/questions").then(r => r.json()).then(qs => {
+                questions = qs;
+                load();
+            });
         });
-        startTimer();
-    }
 
-    function startTimer() {
-        let time = 15; clearInterval(timerId);
-        timerId = setInterval(() => {
-            document.getElementById("timer").innerText = "Time: " + time--;
-            if (time < 0) { socket.emit("answer", { correct: false }); i++; load(); }
-        }, 1000);
-    }
+        socket.on("restored", t => { 
+            if (t === token) location.reload(); 
+        });
 
-    function showDQ() {
-        if (isFinished) return; // Don't DQ if already finished
-        isDq = true; 
-        clearInterval(timerId);
-        document.getElementById("quiz-container").innerHTML = `<h1 style="color:red">DISQUALIFIED</h1><p>Tab switching detected. Contact Admin.</p>`;
-    }
+        function load() {
+            if (i >= questions.length) return showFinished();
+            
+            // Update the Question X of Y counter
+            document.getElementById("overview").innerText = `Question ${i + 1} of ${questions.length}`;
+            
+            const q = questions[i];
+            document.getElementById("q").innerText = q.Question;
+            const ops = document.getElementById("ops");
+            ops.innerHTML = "";
 
-    function showFinished() { 
-        isFinished = true; // Mark as finished to disable DQ logic
-        clearInterval(timerId);
-        document.getElementById("quiz-container").innerHTML = `<h2>Quiz Completed!</h2><p>You can now safely leave this page.</p>`; 
-    }
-
-    // FIXED DQ LOGIC: Only triggers if NOT finished and NOT already DQ'd
-    function handleViolation() {
-        if (!isDq && !isFinished) {
-            socket.emit("dq_signal");
-            showDQ();
+            ["A","B","C","D"].forEach(k => {
+                const btn = document.createElement("button");
+                btn.innerText = q[k];
+                btn.onclick = () => {
+                    if(isDq || isFinished) return; // Prevent clicking if DQ or Finished
+                    clearInterval(timerId);
+                    socket.emit("answer", { correct: k === q.Answer.trim() });
+                    i++; 
+                    load();
+                };
+                ops.appendChild(btn);
+            });
+            startTimer();
         }
-    }
 
-    window.onblur = handleViolation;
-    document.addEventListener("visibilitychange", () => { if (document.hidden) handleViolation(); });
-</script>
+        function startTimer() {
+            let time = 15;
+            clearInterval(timerId);
+            timerId = setInterval(() => {
+                document.getElementById("timer").innerText = "Time: " + time--;
+                if (time < 0) { 
+                    socket.emit("answer", { correct: false }); 
+                    i++; 
+                    load(); 
+                }
+            }, 1000);
+        }
+
+        function showDQ() {
+            // ONLY show DQ if the user hasn't finished yet
+            if (isFinished) return; 
+
+            isDq = true;
+            clearInterval(timerId);
+            document.getElementById("quiz-container").innerHTML = `
+                <h1 style="color: #ff4b2b; font-size: 2.5rem;">DISQUALIFIED</h1>
+                <p>Tab switching, minimizing, or app switching detected.</p>
+                <p style="color: #bbb;">Please contact the Admin to be re-qualified.</p>
+            `;
+            document.getElementById("overview").innerText = "STATUS: DISQUALIFIED";
+        }
+
+        function showFinished() {
+            isFinished = true; // Prevents DQ logic from firing now
+            clearInterval(timerId);
+            document.getElementById("quiz-container").innerHTML = `
+                <h2 style="color: #00ff88;">Quiz Completed!</h2>
+                <p>Your responses have been securely recorded.</p>
+                <p style="color: #888;">You may now close this tab.</p>
+            `;
+            document.getElementById("overview").innerText = "STATUS: COMPLETED";
+        }
+
+        // --- ANTI-CHEAT LOGIC ---
+        function handleViolation() {
+            // ONLY trigger DQ if NOT already DQ'd and NOT finished
+            if (!isDq && !isFinished) {
+                socket.emit("dq_signal");
+                showDQ();
+            }
+        }
+
+        // Detect if user switches tabs or minimizes browser
+        document.addEventListener("visibilitychange", () => { 
+            if (document.hidden) handleViolation(); 
+        });
+
+        // Detect if browser window loses focus
+        window.addEventListener("blur", handleViolation);
+
+    </script>
+</body>
+</html>
