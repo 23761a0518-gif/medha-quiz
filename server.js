@@ -7,7 +7,7 @@ const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static("public"));
 app.use(express.json());
@@ -19,7 +19,6 @@ let socketToToken = {};
 let questions = [];
 
 io.on("connection", socket => {
-    // Optimization for 100 people: Only Admin/Leaderboard join monitors room
     socket.on("register_monitor", () => {
         socket.join("monitors");
         socket.emit("leaderboard", teams);
@@ -35,35 +34,21 @@ io.on("connection", socket => {
             socket.emit("sync_state", { 
                 currentQ: teams[token].currentQ, 
                 dq: teams[token].dq,
-                completed: teams[token].completed
+                completed: teams[token].completed,
+                totalQ: questions.length
             });
         }
     });
 
     socket.on("join", ({ name, token }) => {
-        // CHANGED: Regex to allow 1 to 3 digits
         if (!/^\d{1,3}$/.test(name)) return;
-
         const isTaken = Object.values(teams).some(t => t.name === name);
-        if (isTaken) {
-            return socket.emit("error_msg", "This Team ID is already registered!");
-        }
+        if (isTaken) return socket.emit("error_msg", "This Team ID is already registered!");
 
-        if (teams[token]) return socket.emit("blocked");
-        
-        teams[token] = { 
-            name, 
-            score: 0, 
-            dq: false, 
-            currentQ: 0, 
-            completed: false,
-            dqTimer: null 
-        };
+        teams[token] = { name, score: 0, dq: false, currentQ: 0, completed: false, dqTimer: null };
         socketToToken[socket.id] = token;
-        
-        // Only broadcast to monitors room to save server bandwidth
         io.to("monitors").emit("leaderboard", teams);
-        socket.emit("join_success");
+        socket.emit("join_success", { totalQ: questions.length });
     });
 
     socket.on("answer", ({ correct }) => {
@@ -73,7 +58,6 @@ io.on("connection", socket => {
 
         if (correct) team.score += 10;
         team.currentQ++; 
-        
         if(team.currentQ >= questions.length) team.completed = true;
         io.to("monitors").emit("leaderboard", teams);
     });
@@ -82,7 +66,7 @@ io.on("connection", socket => {
         const token = socketToToken[socket.id];
         if (token && teams[token]) {
             teams[token].dq = true;
-            socket.emit("force_dq"); // NEW: Tells the client to lock the screen immediately
+            socket.emit("force_dq"); 
             io.to("monitors").emit("leaderboard", teams);
         }
     });
@@ -95,6 +79,13 @@ io.on("connection", socket => {
         }
     });
 
+    socket.on("reset_all_data", () => {
+        teams = {};
+        socketToToken = {};
+        io.emit("force_logout");
+        io.to("monitors").emit("leaderboard", {});
+    });
+
     socket.on("disconnect", () => {
         const token = socketToToken[socket.id];
         const team = teams[token];
@@ -102,7 +93,6 @@ io.on("connection", socket => {
             team.dqTimer = setTimeout(() => {
                 team.dq = true;
                 io.to("monitors").emit("leaderboard", teams);
-                team.dqTimer = null;
             }, 5000); 
         }
         delete socketToToken[socket.id];
@@ -118,6 +108,4 @@ app.post("/upload", upload.single("file"), (req, res) => {
 });
 
 app.get("/questions", (req, res) => res.json(questions));
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`LAKSHYA 2K26 Server Running on ${PORT}`));
+server.listen(process.env.PORT || 3000);

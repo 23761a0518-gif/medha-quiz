@@ -1,50 +1,32 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Admin | LAKSHYA 2K26</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+<head><title>Admin | LAKSHYA</title><link rel="stylesheet" href="style.css"></head>
 <body>
-    <div class="college-header">
-        <img src="college_logo.png" class="logo-img">
-        <div class="header-text"><h1>LBRCE ADMIN</h1><p>LAKSHYA 2K26</p></div>
-        <img src="lakshya_logo.png" class="logo-img">
-    </div>
-
     <div class="card" style="max-width: 800px;">
-        <h2>Upload Questions</h2>
-        <input type="file" id="fileInput" accept=".xlsx">
-        <button onclick="uploadFile()">UPLOAD EXCEL</button>
-        <hr style="margin: 20px 0; opacity: 0.1;">
+        <h2>Admin Panel</h2>
+        <input type="file" id="fileInput" accept=".xlsx"><button onclick="uploadFile()">UPLOAD</button>
+        <button onclick="if(confirm('Reset all?')) socket.emit('reset_all_data')" style="background:red">RESET SYSTEM</button>
         <div id="admin-list"></div>
     </div>
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        // NEW: Tells the server to send live data here
         socket.emit("register_monitor");
-
         async function uploadFile() {
-            const file = document.getElementById('fileInput').files[0];
-            const formData = new FormData(); formData.append('file', file);
-            const res = await fetch('/upload', { method: 'POST', body: formData });
-            if(res.ok) alert("Questions Uploaded Successfully!");
+            const fd = new FormData(); fd.append('file', document.getElementById('fileInput').files[0]);
+            await fetch('/upload', { method: 'POST', body: fd });
+            alert("Uploaded!");
         }
-
         socket.on("leaderboard", teams => {
             const container = document.getElementById("admin-list");
-            container.innerHTML = "<h3>Live Team Status</h3>";
+            container.innerHTML = "<h3>Team Status</h3>";
             Object.entries(teams).forEach(([token, team]) => {
-                container.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333">
-                        <span>Team ID: <b>${team.name}</b> | Q: ${team.currentQ} ${team.dq ? '<b style="color:red">(DQ)</b>' : ''}</span>
-                        <button onclick="qualify('${token}')" style="width:auto; padding:5px 15px;">Qualify</button>
-                    </div>`;
+                container.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333">
+                    <span>Team: ${team.name} | Q: ${team.currentQ} ${team.dq?'<b style="color:red">(DQ)</b>':''}</span>
+                    <button onclick="socket.emit('qualify_team', '${token}')">Qualify</button>
+                </div>`;
             });
         });
-
-        function qualify(token) { socket.emit("qualify_team", token); }
     </script>
 </body>
 </html>

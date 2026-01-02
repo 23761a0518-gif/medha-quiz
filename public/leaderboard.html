@@ -1,34 +1,19 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Leaderboard | LAKSHYA 2K26</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+<head><title>Leaderboard</title><link rel="stylesheet" href="style.css"></head>
 <body>
-    <div class="college-header">
-        <img src="college_logo.png" class="logo-img">
-        <div class="header-text"><h1>LBRCE CSE</h1><p>LIVE RANKINGS</p></div>
-        <img src="lakshya_logo.png" class="logo-img">
-    </div>
-
     <div class="card" style="max-width: 800px;">
+        <h1>LIVE RANKINGS</h1>
         <ul id="list"></ul>
     </div>
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        // NEW: Tells the server to send live data here
         socket.emit("register_monitor");
-
         socket.on("leaderboard", teams => {
             const list = document.getElementById("list");
-            list.innerHTML = "";
-            Object.values(teams)
-                .sort((a,b) => b.score - a.score)
-                .forEach(t => {
-                    list.innerHTML += `<li><span>Team ${t.name}</span> <span>${t.score} pts ${t.dq?'❌':''}</span></li>`;
-                });
+            list.innerHTML = Object.values(teams).sort((a,b)=>b.score-a.score)
+                .map(t => `<li><span>Team ${t.name}</span> <span>${t.score} pts ${t.dq?'❌':''}</span></li>`).join("");
         });
     </script>
 </body>

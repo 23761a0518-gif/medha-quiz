@@ -1,48 +1,29 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Join | LAKSHYA 2K26</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+<head><title>Join | LAKSHYA 2K26</title><link rel="stylesheet" href="style.css"></head>
 <body>
     <div class="college-header">
         <img src="college_logo.png" class="logo-img">
-        <div class="header-text">
-            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
-            <p>CSE BRANCH | LAKSHYA 2K26</p>
-        </div>
+        <div class="header-text"><h1>LBRCE CSE</h1><p>MEDHA 2K26</p></div>
         <img src="lakshya_logo.png" class="logo-img">
     </div>
-
     <div class="card">
         <h2>Team Login</h2>
-        <p style="color: #ffcc00; font-size: 0.9rem; margin-bottom: 15px;">
-            ⚠️ <b>Note:</b> Please enter your Team ID (Max 3 digits).
-        </p>
-        <input id="teamId" type="number" oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);" placeholder="Ex: 7" style="text-align: center; font-size: 1.5rem;">
+        <input id="teamId" type="number" oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);" placeholder="Team ID (Max 3 digits)" style="text-align: center; font-size: 1.5rem;">
         <button onclick="join()">START QUIZ</button>
     </div>
-
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         function join() {
             const name = document.getElementById("teamId").value;
-            // CHANGED: Validation to allow 1-3 digits
-            if (!name || name.length > 3) return alert("Team ID must be between 1 and 3 digits!");
-            
+            if (!name || name.length > 3) return alert("Enter 1-3 digits!");
             const token = crypto.randomUUID();
             localStorage.setItem("token", token);
             socket.emit("join", { name, token });
         }
-
-        socket.on("join_success", () => {
-            window.location.href = "quiz.html";
-        });
-
-        socket.on("error_msg", (msg) => {
-            alert(msg);
-        });
+        socket.on("join_success", () => location.href = "quiz.html");
+        socket.on("error_msg", m => alert(m));
     </script>
 </body>
 </html>
