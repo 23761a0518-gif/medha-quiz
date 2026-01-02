@@ -123,5 +123,5 @@ app.post("/upload", upload.single("file"), (req, res) => {
 
 app.get("/questions", (req, res) => res.json(questions));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 1000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Server Running on ${PORT}`));
