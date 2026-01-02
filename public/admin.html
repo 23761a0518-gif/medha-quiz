@@ -2,8 +2,17 @@
 <html>
 <head><title>Admin | LAKSHYA</title><link rel="stylesheet" href="style.css"></head>
 <body>
+    <div class="college-header">
+        <img src="college_logo.png" class="logo-img">
+        <div class="header-text">
+            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING </h1>
+            <h2>LAKSHYA 2K26 - NATIONAL LEVEL TECHNICAL FEST</h2>
+            <h3>MEDHA - Department of Computer Science and Engineering</h3>
+            <p id="overview" style="color: #ffcc00; font-weight: bold; text-align: center;">ADMIN PANEL</p>
+        </div>
+        <img src="lakshya_logo.png" class="logo-img">
+    </div>
     <div class="card" style="max-width: 800px;">
-        <h2>Admin Panel</h2>
         <input type="file" id="fileInput" accept=".xlsx"><button onclick="uploadFile()">UPLOAD</button>
         <button onclick="if(confirm('Reset all?')) socket.emit('reset_all_data')" style="background:red">RESET SYSTEM</button>
         <div id="admin-list"></div>
