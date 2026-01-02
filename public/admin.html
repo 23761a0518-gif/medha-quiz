@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin | MEDHA 2K26</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="college-header">
+        <img src="college_logo.png" class="logo-img">
+        <div class="header-text">
+            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
+            <p>ADMIN PANEL | LAKSHYA 2K26</p>
+        </div>
+        <img src="lakshya_logo.png" class="logo-img">
+    </div>
+
+    <div class="card">
+        <h2>Upload Questions</h2>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
+            Select an .xlsx file with columns:<br>
+            <b>Question, A, B, C, D, Answer</b>
+        </p>
+        
+        <input type="file" id="fileInput" accept=".xlsx, .xls" style="border: 1px dashed var(--primary); padding: 20px;">
+        
+        <button id="uploadBtn" onclick="uploadFile()">UPLOAD TO SERVER</button>
+        
+        <div id="status" style="margin-top: 20px; font-weight: bold;"></div>
+    </div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const status = document.getElementById('status');
+            const btn = document.getElementById('uploadBtn');
+
+            if (fileInput.files.length === 0) {
+                return alert("Please select an Excel file first!");
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            status.innerText = "Uploading...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    status.style.color = "#00ff88";
+                    status.innerText = `✅ Success! ${result.count} questions loaded.`;
+                } else {
+                    throw new Error("Upload failed");
+                }
+            } catch (error) {
+                status.style.color = "#ff4b2b";
+                status.innerText = "❌ Error uploading file.";
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
