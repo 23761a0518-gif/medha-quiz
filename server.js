@@ -23,7 +23,7 @@ io.on("connection", socket => {
         if (teams[token]) {
             socketToToken[socket.id] = token;
             
-            // Clear any pending DQ timer because they successfully rejoined
+            // Clear DQ timer because they rejoined within the grace period
             if (teams[token].dqTimer) {
                 clearTimeout(teams[token].dqTimer);
                 teams[token].dqTimer = null;
@@ -86,8 +86,7 @@ io.on("connection", socket => {
         const team = teams[token];
 
         if (token && team && !team.completed && !team.dq) {
-            // GRACE PERIOD: Wait 5 seconds before DQing. 
-            // This allows for page transitions (index -> quiz)
+            // Grace period: Wait 5 seconds before DQing to allow page transition
             team.dqTimer = setTimeout(() => {
                 team.dq = true;
                 io.emit("leaderboard", teams);
@@ -109,4 +108,4 @@ app.post("/upload", upload.single("file"), (req, res) => {
 app.get("/questions", (req, res) => res.json(questions));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`LAKSHYA 2K26 Fixed Server Running` Sun));
+server.listen(PORT, () => console.log(`LAKSHYA 2K26 Server Running on ${PORT}`));
