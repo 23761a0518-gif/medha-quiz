@@ -3,7 +3,6 @@ const http = require("http");
 const { Server } = require("socket.io");
 const multer = require("multer");
 const XLSX = require("xlsx");
-const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -18,10 +17,25 @@ let teams = {};
 let socketToToken = {}; 
 let questions = [];
 
+// This function removes the circular Timer object so Socket.io doesn't crash
+function getCleanTeams() {
+    let clean = {};
+    for (let token in teams) {
+        clean[token] = {
+            name: teams[token].name,
+            score: teams[token].score,
+            dq: teams[token].dq,
+            currentQ: teams[token].currentQ,
+            completed: teams[token].completed
+        };
+    }
+    return clean;
+}
+
 io.on("connection", socket => {
     socket.on("register_monitor", () => {
         socket.join("monitors");
-        socket.emit("leaderboard", teams);
+        socket.emit("leaderboard", getCleanTeams());
     });
 
     socket.on("rejoin", (token) => {
@@ -47,7 +61,7 @@ io.on("connection", socket => {
 
         teams[token] = { name, score: 0, dq: false, currentQ: 0, completed: false, dqTimer: null };
         socketToToken[socket.id] = token;
-        io.to("monitors").emit("leaderboard", teams);
+        io.to("monitors").emit("leaderboard", getCleanTeams());
         socket.emit("join_success", { totalQ: questions.length });
     });
 
@@ -59,7 +73,7 @@ io.on("connection", socket => {
         if (correct) team.score += 10;
         team.currentQ++; 
         if(team.currentQ >= questions.length) team.completed = true;
-        io.to("monitors").emit("leaderboard", teams);
+        io.to("monitors").emit("leaderboard", getCleanTeams());
     });
 
     socket.on("dq_signal", () => {
@@ -67,14 +81,14 @@ io.on("connection", socket => {
         if (token && teams[token]) {
             teams[token].dq = true;
             socket.emit("force_dq"); 
-            io.to("monitors").emit("leaderboard", teams);
+            io.to("monitors").emit("leaderboard", getCleanTeams());
         }
     });
 
     socket.on("qualify_team", (token) => {
         if (teams[token]) {
             teams[token].dq = false;
-            io.to("monitors").emit("leaderboard", teams);
+            io.to("monitors").emit("leaderboard", getCleanTeams());
             io.emit("restored", token); 
         }
     });
@@ -92,7 +106,7 @@ io.on("connection", socket => {
         if (token && team && !team.completed && !team.dq) {
             team.dqTimer = setTimeout(() => {
                 team.dq = true;
-                io.to("monitors").emit("leaderboard", teams);
+                io.to("monitors").emit("leaderboard", getCleanTeams());
             }, 5000); 
         }
         delete socketToToken[socket.id];
@@ -108,4 +122,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
 });
 
 app.get("/questions", (req, res) => res.json(questions));
-server.listen(process.env.PORT || 3000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, '0.0.0.0', () => console.log(`Server Running on ${PORT}`));
