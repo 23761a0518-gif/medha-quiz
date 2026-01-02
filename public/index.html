@@ -15,7 +15,10 @@
     </div>
 
     <div class="card">
-        <h2>Enter 3-Digit Team ID</h2>
+        <h2>Team Login</h2>
+        <p style="color: #ffcc00; font-size: 0.9rem; margin-bottom: 15px;">
+            ⚠️ <b>Note:</b> Please enter the 3-digit Team ID provided to you.
+        </p>
         <input id="teamId" type="text" maxlength="3" placeholder="Ex: 101" style="text-align: center; font-size: 1.5rem;">
         <button onclick="join()">START QUIZ</button>
     </div>
@@ -30,8 +33,15 @@
             const token = crypto.randomUUID();
             localStorage.setItem("token", token);
             socket.emit("join", { name, token });
-            setTimeout(() => { window.location.href = "quiz.html"; }, 200);
         }
+
+        socket.on("join_success", () => {
+            window.location.href = "quiz.html";
+        });
+
+        socket.on("error_msg", (msg) => {
+            alert(msg);
+        });
     </script>
 </body>
 </html>

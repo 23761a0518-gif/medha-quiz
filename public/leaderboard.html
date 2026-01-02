@@ -1,22 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Leaderboard | MEDHA 2K26</title>
+    <title>Leaderboard | LAKSHYA 2K26</title>
     <link rel="stylesheet" href="style.css">
-    <style> .card { max-width: 800px; } </style>
 </head>
 <body>
     <div class="college-header">
         <img src="college_logo.png" class="logo-img">
-        <div class="header-text">
-            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
-            <p>CSE BRANCH | LAKSHYA 2K26</p>
-        </div>
+        <div class="header-text"><h1>LBRCE CSE</h1><p>LIVE RANKINGS</p></div>
         <img src="lakshya_logo.png" class="logo-img">
     </div>
 
-    <div class="card">
-        <h2>LIVE LEADERBOARD</h2>
+    <div class="card" style="max-width: 800px;">
         <ul id="list"></ul>
     </div>
 
@@ -29,14 +24,7 @@
             Object.values(teams)
                 .sort((a,b) => b.score - a.score)
                 .forEach(t => {
-                    list.innerHTML += `
-                        <li>
-                            <span>${t.name}</span>
-                            <span>
-                                <strong>${t.score} pts</strong> 
-                                ${t.dq ? '<span class="dq-label">[DQ]</span>' : ''}
-                            </span>
-                        </li>`;
+                    list.innerHTML += `<li><span>Team ${t.name}</span> <span>${t.score} pts ${t.dq?'❌':''}</span></li>`;
                 });
         });
     </script>

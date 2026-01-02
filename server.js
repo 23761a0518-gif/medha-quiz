@@ -22,13 +22,10 @@ io.on("connection", socket => {
     socket.on("rejoin", (token) => {
         if (teams[token]) {
             socketToToken[socket.id] = token;
-            
-            // Clear DQ timer because they rejoined within the grace period
             if (teams[token].dqTimer) {
                 clearTimeout(teams[token].dqTimer);
                 teams[token].dqTimer = null;
             }
-
             socket.emit("sync_state", { 
                 currentQ: teams[token].currentQ, 
                 dq: teams[token].dq,
@@ -39,6 +36,13 @@ io.on("connection", socket => {
 
     socket.on("join", ({ name, token }) => {
         if (!/^\d{3}$/.test(name)) return;
+
+        // Check if Team ID is already taken
+        const isTaken = Object.values(teams).some(t => t.name === name);
+        if (isTaken) {
+            return socket.emit("error_msg", "This Team ID is already registered!");
+        }
+
         if (teams[token]) return socket.emit("blocked");
         
         teams[token] = { 
@@ -51,6 +55,7 @@ io.on("connection", socket => {
         };
         socketToToken[socket.id] = token;
         io.emit("leaderboard", teams);
+        socket.emit("join_success");
     });
 
     socket.on("answer", ({ correct }) => {
@@ -84,9 +89,7 @@ io.on("connection", socket => {
     socket.on("disconnect", () => {
         const token = socketToToken[socket.id];
         const team = teams[token];
-
         if (token && team && !team.completed && !team.dq) {
-            // Grace period: Wait 5 seconds before DQing to allow page transition
             team.dqTimer = setTimeout(() => {
                 team.dq = true;
                 io.emit("leaderboard", teams);

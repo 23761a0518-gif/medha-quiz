@@ -13,46 +13,35 @@
 
     <div class="card" style="max-width: 800px;">
         <h2>Upload Questions</h2>
-        <input type="file" id="fileInput" accept=".xlsx" style="margin-bottom: 10px;">
+        <input type="file" id="fileInput" accept=".xlsx">
         <button onclick="uploadFile()">UPLOAD EXCEL</button>
-        
-        <hr style="margin: 20px 0; opacity: 0.2;">
-        
-        <h2>Team Management</h2>
+        <hr style="margin: 20px 0; opacity: 0.1;">
         <div id="admin-list"></div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        
         async function uploadFile() {
             const file = document.getElementById('fileInput').files[0];
-            if(!file) return alert("Select file!");
-            const formData = new FormData();
-            formData.append('file', file);
+            const formData = new FormData(); formData.append('file', file);
             const res = await fetch('/upload', { method: 'POST', body: formData });
             if(res.ok) alert("Questions Uploaded Successfully!");
         }
 
         socket.on("leaderboard", teams => {
             const container = document.getElementById("admin-list");
-            container.innerHTML = "";
+            container.innerHTML = "<h3>Live Team Status</h3>";
             Object.entries(teams).forEach(([token, team]) => {
-                const row = document.createElement("div");
-                row.style = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333";
-                row.innerHTML = `
-                    <span>Team: <b>${team.name}</b> | Score: ${team.score} | Q: ${team.currentQ} 
-                    ${team.dq ? '<b style="color:red"> (DQ)</b>' : '<b style="color:green"> (Active)</b>'}</span>
-                    <button onclick="qualify('${token}')" style="width:auto; padding:5px 15px; margin:0;">QUALIFY</button>
-                `;
-                container.appendChild(row);
+                container.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333">
+                        <span>Team ID: <b>${team.name}</b> | Q: ${team.currentQ} ${team.dq ? '<b style="color:red">(DQ)</b>' : ''}</span>
+                        <button onclick="qualify('${token}')" style="width:auto; padding:5px 15px;">Qualify</button>
+                    </div>`;
             });
         });
 
-        function qualify(token) {
-            socket.emit("qualify_team", token);
-        }
+        function qualify(token) { socket.emit("qualify_team", token); }
     </script>
 </body>
 </html>
