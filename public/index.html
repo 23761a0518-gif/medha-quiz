@@ -1,36 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Join | MEDHA 2K26</title>
+    <title>Join | LAKSHYA 2K26</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="college-header">
-        <img src="college_logo.png" class="logo-img"> <div class="header-text">
+        <img src="college_logo.png" class="logo-img">
+        <div class="header-text">
             <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
             <p>CSE BRANCH | LAKSHYA 2K26</p>
         </div>
-        <img src="lakshya_logo.png" class="logo-img"> </div>
+        <img src="lakshya_logo.png" class="logo-img">
+    </div>
 
     <div class="card">
-        <h2>MEDHA QUIZ</h2>
-        <div id="join-form">
-            <input id="name" placeholder="Enter Team Name">
-            <button onclick="join()">JOIN QUIZ</button>
-        </div>
+        <h2>Enter 3-Digit Team ID</h2>
+        <input id="teamId" type="text" maxlength="3" placeholder="Ex: 101" style="text-align: center; font-size: 1.5rem;">
+        <button onclick="join()">START QUIZ</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        if (localStorage.getItem("joined")) {
-            document.querySelector(".card").innerHTML = "<h3>Already Attempted.</h3><p>Re-attempts are not allowed.</p>";
-        }
         function join() {
-            const name = document.getElementById("name").value.trim();
-            if (!name) return alert("Enter team name");
+            const name = document.getElementById("teamId").value;
+            if (!/^\d{3}$/.test(name)) return alert("Team ID must be exactly a 3-digit number!");
+            
             const token = crypto.randomUUID();
-            localStorage.setItem("joined", "yes");
             localStorage.setItem("token", token);
             socket.emit("join", { name, token });
             setTimeout(() => { window.location.href = "quiz.html"; }, 200);

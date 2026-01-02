@@ -1,69 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin | MEDHA 2K26</title>
+    <title>Admin | LAKSHYA 2K26</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="college-header">
         <img src="college_logo.png" class="logo-img">
-        <div class="header-text">
-            <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
-            <p>ADMIN PANEL | LAKSHYA 2K26</p>
-        </div>
+        <div class="header-text"><h1>LBRCE ADMIN</h1><p>LAKSHYA 2K26</p></div>
         <img src="lakshya_logo.png" class="logo-img">
     </div>
 
-    <div class="card">
+    <div class="card" style="max-width: 800px;">
         <h2>Upload Questions</h2>
-        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
-            Select an .xlsx file with columns:<br>
-            <b>Question, A, B, C, D, Answer</b>
-        </p>
+        <input type="file" id="fileInput" accept=".xlsx" style="margin-bottom: 10px;">
+        <button onclick="uploadFile()">UPLOAD EXCEL</button>
         
-        <input type="file" id="fileInput" accept=".xlsx, .xls" style="border: 1px dashed var(--primary); padding: 20px;">
+        <hr style="margin: 20px 0; opacity: 0.2;">
         
-        <button id="uploadBtn" onclick="uploadFile()">UPLOAD TO SERVER</button>
-        
-        <div id="status" style="margin-top: 20px; font-weight: bold;"></div>
+        <h2>Team Management</h2>
+        <div id="admin-list"></div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
+        const socket = io();
+        
         async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const status = document.getElementById('status');
-            const btn = document.getElementById('uploadBtn');
-
-            if (fileInput.files.length === 0) {
-                return alert("Please select an Excel file first!");
-            }
-
+            const file = document.getElementById('fileInput').files[0];
+            if(!file) return alert("Select file!");
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            formData.append('file', file);
+            const res = await fetch('/upload', { method: 'POST', body: formData });
+            if(res.ok) alert("Questions Uploaded Successfully!");
+        }
 
-            status.innerText = "Uploading...";
-            btn.disabled = true;
+        socket.on("leaderboard", teams => {
+            const container = document.getElementById("admin-list");
+            container.innerHTML = "";
+            Object.entries(teams).forEach(([token, team]) => {
+                const row = document.createElement("div");
+                row.style = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #333";
+                row.innerHTML = `
+                    <span>Team: <b>${team.name}</b> | Score: ${team.score} | Q: ${team.currentQ} 
+                    ${team.dq ? '<b style="color:red"> (DQ)</b>' : '<b style="color:green"> (Active)</b>'}</span>
+                    <button onclick="qualify('${token}')" style="width:auto; padding:5px 15px; margin:0;">QUALIFY</button>
+                `;
+                container.appendChild(row);
+            });
+        });
 
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    status.style.color = "#00ff88";
-                    status.innerText = `✅ Success! ${result.count} questions loaded.`;
-                } else {
-                    throw new Error("Upload failed");
-                }
-            } catch (error) {
-                status.style.color = "#ff4b2b";
-                status.innerText = "❌ Error uploading file.";
-            } finally {
-                btn.disabled = false;
-            }
+        function qualify(token) {
+            socket.emit("qualify_team", token);
         }
     </script>
 </body>

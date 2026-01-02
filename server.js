@@ -18,64 +18,82 @@ let teams = {};
 let socketToToken = {}; 
 let questions = [];
 
-const POINTS = 10;
-
 io.on("connection", socket => {
-  // Fix: Links the new page socket to the existing team session
-  socket.on("rejoin", (token) => {
-    if (teams[token]) {
-      socketToToken[socket.id] = token;
-      console.log(`Team ${teams[token].name} rejoined.`);
-    }
-  });
+    socket.on("rejoin", (token) => {
+        if (teams[token]) {
+            socketToToken[socket.id] = token;
+            
+            // Auto-DQ if they try to reconnect while the quiz is active
+            if (teams[token].currentQ > 0 && !teams[token].completed && !teams[token].dq) {
+                teams[token].dq = true;
+                io.emit("leaderboard", teams);
+            }
+            
+            socket.emit("sync_state", { 
+                currentQ: teams[token].currentQ, 
+                dq: teams[token].dq,
+                completed: teams[token].completed
+            });
+        }
+    });
 
-  socket.on("join", ({ name, token }) => {
-    if (!name || !token) return;
-    if (teams[token]) return socket.emit("blocked");
+    socket.on("join", ({ name, token }) => {
+        if (!/^\d{3}$/.test(name)) return; // Strict 3-digit check
+        if (teams[token]) return socket.emit("blocked");
+        
+        teams[token] = { name, score: 0, dq: false, currentQ: 0, completed: false };
+        socketToToken[socket.id] = token;
+        io.emit("leaderboard", teams);
+    });
 
-    teams[token] = { name, score: 0, dq: false };
-    socketToToken[socket.id] = token;
-    io.emit("leaderboard", teams);
-  });
+    socket.on("answer", ({ correct }) => {
+        const token = socketToToken[socket.id];
+        const team = teams[token];
+        if (!team || team.dq || team.completed) return;
 
-  socket.on("answer", ({ correct }) => {
-    const token = socketToToken[socket.id];
-    if (!token || !teams[token] || teams[token].dq) return;
+        if (correct) team.score += 10;
+        team.currentQ++; 
+        
+        if(team.currentQ >= questions.length) team.completed = true;
+        io.emit("leaderboard", teams);
+    });
 
-    if (correct) teams[token].score += POINTS;
-    io.emit("leaderboard", teams);
-  });
+    socket.on("dq_signal", () => {
+        const token = socketToToken[socket.id];
+        if (token && teams[token]) {
+            teams[token].dq = true;
+            io.emit("leaderboard", teams);
+        }
+    });
 
-  socket.on("dq", () => {
-    const token = socketToToken[socket.id];
-    if (token && teams[token]) {
-      teams[token].dq = true;
-      io.emit("leaderboard", teams);
-    }
-  });
+    socket.on("qualify_team", (token) => {
+        if (teams[token]) {
+            teams[token].dq = false;
+            io.emit("leaderboard", teams);
+            io.emit("restored", token); 
+        }
+    });
 
-  socket.on("disconnect", () => {
-    delete socketToToken[socket.id];
-  });
+    socket.on("disconnect", () => {
+        const token = socketToToken[socket.id];
+        // If they disconnect during the quiz, DQ them
+        if (token && teams[token] && !teams[token].completed && !teams[token].dq) {
+            teams[token].dq = true; 
+            io.emit("leaderboard", teams);
+        }
+        delete socketToToken[socket.id];
+    });
 });
 
 app.post("/upload", upload.single("file"), (req, res) => {
-  try {
-    const wb = XLSX.read(req.file.buffer);
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    questions = XLSX.utils.sheet_to_json(sheet);
-    res.json({ status: "Success", count: questions.length });
-  } catch (e) {
-    res.status(500).json({ status: "Error reading Excel" });
-  }
+    try {
+        const wb = XLSX.read(req.file.buffer);
+        questions = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+        res.json({ count: questions.length });
+    } catch(e) { res.status(500).send(); }
 });
 
 app.get("/questions", (req, res) => res.json(questions));
 
-// Serve HTML files properly
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public/index.html")));
-app.get("/quiz", (req, res) => res.sendFile(path.join(__dirname, "public/quiz.html")));
-app.get("/leaderboard", (req, res) => res.sendFile(path.join(__dirname, "public/leaderboard.html")));
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("MEDHA Quiz Running on port " + PORT));
+server.listen(PORT, () => console.log(`LAKSHYA 2K26 Server Running on ${PORT}`));

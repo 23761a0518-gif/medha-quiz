@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Quiz | MEDHA 2K26</title>
+    <title>Quiz | LAKSHYA 2K26</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -9,14 +9,14 @@
         <img src="college_logo.png" class="logo-img">
         <div class="header-text">
             <h1>LAKIREDDY BALI REDDY COLLEGE OF ENGINEERING</h1>
-            <p>CSE BRANCH | LAKSHYA 2K26</p>
+            <p>CSE BRANCH | MEDHA 2K26</p>
         </div>
         <img src="lakshya_logo.png" class="logo-img">
     </div>
 
-    <div class="card">
+    <div class="card" id="quiz-container">
         <div id="timer" style="font-weight: bold; color: var(--primary); margin-bottom: 10px;">Time: 15</div>
-        <h3 id="q">Loading Questions...</h3>
+        <h3 id="q">Waiting for server...</h3>
         <div id="ops"></div>
     </div>
 
@@ -24,22 +24,29 @@
     <script>
         const socket = io();
         const token = localStorage.getItem("token");
-        let questions = [], i = 0, time = 15, timerId, completed = false;
+        let questions = [], i = 0, time = 15, timerId, isDq = false;
 
-        if (token) socket.emit("rejoin", token);
-        else window.location.href = "index.html";
+        if (!token) window.location.href = "index.html";
+        socket.emit("rejoin", token);
 
-        fetch("/questions").then(r => r.json()).then(d => { 
-            questions = d; 
-            if(questions.length > 0) load();
+        socket.on("sync_state", data => {
+            i = data.currentQ;
+            if (data.dq) return showDQ();
+            if (data.completed) return showFinished();
+            
+            fetch("/questions").then(r => r.json()).then(qs => {
+                questions = qs;
+                load();
+            });
+        });
+
+        socket.on("restored", restoredToken => {
+            if (restoredToken === token) location.reload();
         });
 
         function load() {
-            if (i >= questions.length) {
-                completed = true;
-                document.querySelector(".card").innerHTML = "<h2>Quiz Completed!</h2><p>Thanks for participating.</p>";
-                return;
-            }
+            if (i >= questions.length) return showFinished();
+            
             const q = questions[i];
             document.getElementById("q").innerText = q.Question;
             const ops = document.getElementById("ops");
@@ -49,35 +56,42 @@
                 const btn = document.createElement("button");
                 btn.innerText = q[k];
                 btn.onclick = () => {
-                    Array.from(ops.getElementsByTagName('button')).forEach(b => b.disabled = true);
-                    submit(k === q.Answer.trim());
+                    clearInterval(timerId);
+                    socket.emit("answer", { correct: k === q.Answer.trim() });
+                    i++;
+                    load();
                 };
                 ops.appendChild(btn);
             });
 
+            startTimer();
+        }
+
+        function startTimer() {
             time = 15;
             clearInterval(timerId);
             timerId = setInterval(() => {
                 document.getElementById("timer").innerText = "Time: " + time--;
-                if (time < 0) next();
+                if (time < 0) {
+                    socket.emit("answer", { correct: false });
+                    i++;
+                    load();
+                }
             }, 1000);
         }
 
-        function submit(correct) {
-            clearInterval(timerId);
-            socket.emit("answer", { correct });
-            next();
+        function showDQ() {
+            isDq = true;
+            document.getElementById("quiz-container").innerHTML = `<h1 style="color: #ff4b2b;">DISQUALIFIED</h1><p>Tab switching or Refresh detected.<br>Please inform the Admin.</p>`;
         }
 
-        function next() { i++; load(); }
-
-        document.addEventListener("visibilitychange", () => { if (!completed && document.hidden) dq(); });
-        window.addEventListener("blur", () => { if (!completed) dq(); });
-
-        function dq() {
-            socket.emit("dq");
-            document.querySelector(".card").innerHTML = "<h1 style='color: #ff4b2b;'>DISQUALIFIED</h1><p>Tab switching is not allowed.</p>";
+        function showFinished() {
+            document.getElementById("quiz-container").innerHTML = `<h2>Quiz Completed!</h2><p>Your responses have been recorded.</p>`;
         }
+
+        document.addEventListener("visibilitychange", () => { if (document.hidden && !isDq) socket.emit("dq_signal"); });
+        window.addEventListener("blur", () => { if (!isDq) socket.emit("dq_signal"); });
+        socket.on("leaderboard", (teams) => { if(teams[token] && teams[token].dq) showDQ(); });
     </script>
 </body>
-</html> 
+</html>
